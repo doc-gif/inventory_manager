@@ -5,7 +5,7 @@ import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Label } from '@/presentation/components/ui/Label';
 import { Card } from '@/presentation/components/ui/Card';
-import { CATEGORIES, type Category, type ItemType } from '@/domain/models/inventory-management-types';
+import {CATEGORIES, type Category, type ContentUnit, type ItemType} from '@/domain/models/inventory-management-types';
 import { toast } from 'sonner';
 import { BarcodeScanner } from '@/presentation/pages/BarcodeScanner';
 import {useInventoryStore} from "@/application/stores/useInventoryStore";
@@ -30,6 +30,8 @@ export function AddProduct() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [barcode, setBarcode] = useState('');
   const [showScanner, setShowScanner] = useState(false);
+  const [contentAmount, setContentAmount] = useState<string>("");
+  const [contentUnit, setContentUnit] = useState<ContentUnit>("pcs");
 
   const handleBarcodeScanned = (code: string) => {
     setBarcode(code);
@@ -47,6 +49,12 @@ export function AddProduct() {
       if (existingItem.expiryDays) {
         setExpiryDays(existingItem.expiryDays.toString());
       }
+
+      if (existingItem.contentAmount !== undefined && existingItem.contentUnit) {
+        setContentAmount(String(existingItem.contentAmount));
+        setContentUnit(existingItem.contentUnit);
+      }
+
       toast.success(`「${existingItem.name}」の情報を読み込みました`);
     } else {
       toast.success('バーコードを読み取りました');
@@ -57,6 +65,14 @@ export function AddProduct() {
     e.preventDefault();
     if (!name.trim()) {
       toast.error('商品名を入力してください');
+      return;
+    }
+
+    const parsedContentAmount =
+        contentAmount.trim() === "" ? undefined : Number(contentAmount);
+
+    if (parsedContentAmount !== undefined && (!Number.isFinite(parsedContentAmount) || parsedContentAmount <= 0)) {
+      toast.error("内容量は0より大きい数値で入力してください");
       return;
     }
 
@@ -73,6 +89,8 @@ export function AddProduct() {
       expiryDays: expiryDays ? parseInt(expiryDays) : null,
       lowThreshold: parseInt(lowThreshold) || 2,
       barcode: barcode || null,
+      contentAmount: parsedContentAmount,
+      contentUnit: parsedContentAmount ? contentUnit : undefined,
     });
 
     toast.success(`「${name}」を追加しました`);
@@ -336,6 +354,32 @@ export function AddProduct() {
                   className="h-11"
               />
             </div>
+          </div>
+
+          {/* 内容量（新規） */}
+          <div className="space-y-1.5">
+            <Label>内容量</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Input
+                  inputMode="decimal"
+                  placeholder="例: 300"
+                  value={contentAmount}
+                  onChange={(e) => setContentAmount(e.target.value)}
+                  className="h-11 col-span-2"
+              />
+              <select
+                  value={contentUnit}
+                  onChange={(e) => setContentUnit(e.target.value as ContentUnit)}
+                  className="h-11 rounded-md border bg-input-background px-3 text-sm"
+              >
+                <option value="pcs">本</option>
+                <option value="ml">ml</option>
+                <option value="g">g</option>
+              </select>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              例）フロスピック：100本 / 化粧水：200ml / 歯磨き粉：120g
+            </p>
           </div>
 
           {/* Advanced options toggle */}

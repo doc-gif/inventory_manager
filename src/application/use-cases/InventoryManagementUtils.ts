@@ -13,6 +13,8 @@ export type AddItemInput = {
   expiryDays: number | null;
   lowThreshold: number;
   barcode?: string | null;
+  contentAmount?: number;
+  contentUnit?: string;
 };
 
 export function generateId(): string {

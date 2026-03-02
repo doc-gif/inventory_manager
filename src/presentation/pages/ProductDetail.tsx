@@ -21,9 +21,10 @@ import { Label } from '@/presentation/components/ui/Label';
 import { Card } from '@/presentation/components/ui/Card';
 import { Badge } from '@/presentation/components/ui/Badge';
 import { VolumeGauge } from '@/presentation/components/VolumeGauge';
-import { CATEGORIES, VOLUME_LABELS, type Category } from '@/domain/models/inventory-management-types';
+import {CATEGORIES, VOLUME_LABELS, type Category, type ContentUnit} from '@/domain/models/inventory-management-types';
 import { toast } from 'sonner';
 import {useInventoryStore} from "@/application/stores/useInventoryStore";
+import {formatContent, getUnitPrice} from "@/domain/services/pricing";
 
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -58,6 +59,8 @@ export function ProductDetail() {
   const [editOpenedDate, setEditOpenedDate] = useState('');
   const [editExpiryDays, setEditExpiryDays] = useState('');
   const [editLowThreshold, setEditLowThreshold] = useState('');
+  const [editContentAmount, setEditContentAmount] = useState<string>("");
+  const [editContentUnit, setEditContentUnit] = useState<ContentUnit>("pcs");
 
   if (!item) {
     return (
@@ -81,6 +84,8 @@ export function ProductDetail() {
     setEditOpenedDate(item.openedDate || '');
     setEditExpiryDays(item.expiryDays ? String(item.expiryDays) : '');
     setEditLowThreshold(String(item.lowThreshold));
+    setEditContentAmount(item.contentAmount ? String(item.contentAmount) : "");
+    setEditContentUnit(item.contentUnit ?? "pcs");
     setEditing(true);
   };
 
@@ -89,6 +94,15 @@ export function ProductDetail() {
       toast.error('商品名を入力してください');
       return;
     }
+
+    const parsedContentAmount =
+        editContentAmount.trim() === "" ? undefined : Number(editContentAmount);
+
+    if (parsedContentAmount !== undefined && (!Number.isFinite(parsedContentAmount) || parsedContentAmount <= 0)) {
+      toast.error("内容量は0より大きい数値で入力してください");
+      return;
+    }
+
     updateItem(item.id, {
       name: editName.trim(),
       brand: editBrand.trim(),
@@ -99,10 +113,15 @@ export function ProductDetail() {
       openedDate: editOpenedDate || null,
       expiryDays: editExpiryDays ? parseInt(editExpiryDays) : null,
       lowThreshold: parseInt(editLowThreshold) || 2,
+      contentAmount: parsedContentAmount,
+      contentUnit: parsedContentAmount ? editContentUnit : undefined,
     });
     setEditing(false);
     toast.success('保存しました');
   };
+
+  const unitPrice = getUnitPrice(item);
+  const contentLabel = formatContent(item.contentAmount, item.contentUnit);
 
   const handleDelete = () => {
     deleteItem(item.id);
@@ -320,6 +339,20 @@ export function ProductDetail() {
                 </div>
               )}
 
+              {/* 内容量 & 単位あたり価格（新規） */}
+              {(contentLabel || unitPrice) && (
+                  <div className="pt-2 border-t border-border grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">内容量</p>
+                      <p>{contentLabel ?? "未設定"}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">単位あたり</p>
+                      <p>{unitPrice?.label ?? "未設定"}</p>
+                    </div>
+                  </div>
+              )}
+
               {/* Opened date / Expiry */}
               {(item.openedDate || item.expiryDays) && (
                 <div className="pt-2 border-t border-border grid grid-cols-2 gap-4">
@@ -494,6 +527,29 @@ export function ProductDetail() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* 内容量（編集：新規） */}
+            <div className="space-y-1.5">
+              <Label>内容量</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <Input
+                    inputMode="decimal"
+                    placeholder="例: 300"
+                    value={editContentAmount}
+                    onChange={(e) => setEditContentAmount(e.target.value)}
+                    className="h-11 col-span-2"
+                />
+                <select
+                    value={editContentUnit}
+                    onChange={(e) => setEditContentUnit(e.target.value as ContentUnit)}
+                    className="h-11 rounded-md border bg-input-background px-3 text-sm"
+                >
+                  <option value="pcs">本</option>
+                  <option value="ml">ml</option>
+                  <option value="g">g</option>
+                </select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
