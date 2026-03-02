@@ -15,9 +15,8 @@ export async function lookupBarcodeViaFunctions(barcodeRaw: string): Promise<Bar
     return { ok: false, reason: "INVALID" };
   }
 
-  // Firebase Hosting の rewrite で Functions に繋ぐ想定：
-  // 例: /api/barcodeLookup -> cloud functions
-  const url = `/api/barcodeLookup?barcode=${encodeURIComponent(barcode)}`;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const url = `${baseUrl}/barcodeLookup?barcode=${encodeURIComponent(barcode)}`;
 
   try {
     const res = await fetch(url, { method: "GET" });
