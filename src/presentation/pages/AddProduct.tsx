@@ -9,6 +9,7 @@ import {CATEGORIES, type Category, type ContentUnit, type ItemType} from '@/doma
 import { toast } from 'sonner';
 import { BarcodeScanner } from '@/presentation/pages/BarcodeScanner';
 import {useInventoryStore} from "@/application/stores/useInventoryStore";
+import {lookupBarcodeForAddProduct} from "@/application/use-cases/BarcodeLookupService";
 
 export function AddProduct() {
   const navigate = useNavigate();
@@ -32,32 +33,60 @@ export function AddProduct() {
   const [showScanner, setShowScanner] = useState(false);
   const [contentAmount, setContentAmount] = useState<string>("");
   const [contentUnit, setContentUnit] = useState<ContentUnit>("pcs");
+  const [isLookingUpBarcode, setIsLookingUpBarcode] = useState(false);
 
-  const handleBarcodeScanned = (code: string) => {
+  const applySuggestionToForm = (s: {
+    name?: string;
+    brand?: string;
+    type?: ItemType;
+    category?: Category;
+    contentAmount?: number;
+    contentUnit?: ContentUnit;
+  }) => {
+    if (s.name) setName(s.name);
+    if (s.brand !== undefined) setBrand(s.brand);
+    if (s.type) setType(s.type);
+    if (s.category) setCategory(s.category);
+
+    if (s.contentAmount && s.contentUnit) {
+      setContentAmount(String(s.contentAmount));
+      setContentUnit(s.contentUnit);
+    }
+  };
+
+  const handleBarcodeScanned = async (code: string) => {
     setBarcode(code);
 
-    // バーコードで既存の商品を検索
-    const existingItem = items.find((item) => item.barcode === code);
-    if (existingItem) {
-      // 既存商品の情報を自動入力
-      setName(existingItem.name);
-      setBrand(existingItem.brand);
-      setType(existingItem.type);
-      setCategory(existingItem.category);
-      setPrice(existingItem.price.toString());
-      setLowThreshold(existingItem.lowThreshold.toString());
-      if (existingItem.expiryDays) {
-        setExpiryDays(existingItem.expiryDays.toString());
+    setIsLookingUpBarcode(true);
+    try {
+      const result = await lookupBarcodeForAddProduct({ barcode: code, items });
+
+      if (result.kind === "HIT_HISTORY") {
+        applySuggestionToForm(result.suggestion);
+        toast.success(`「${result.suggestion.name ?? "商品"}」の情報を読み込みました`);
+        return;
       }
 
-      if (existingItem.contentAmount !== undefined && existingItem.contentUnit) {
-        setContentAmount(String(existingItem.contentAmount));
-        setContentUnit(existingItem.contentUnit);
+      if (result.kind === "HIT_CACHE") {
+        applySuggestionToForm(result.suggestion);
+        toast.success("過去に取得した商品情報を読み込みました。必要に応じて修正して登録してください。");
+        return;
       }
 
-      toast.success(`「${existingItem.name}」の情報を読み込みました`);
-    } else {
-      toast.success('バーコードを読み取りました');
+      if (result.kind === "HIT_REMOTE") {
+        applySuggestionToForm(result.suggestion);
+        toast.success("商品情報を取得しました。必要に応じて修正して登録してください。");
+        return;
+      }
+
+      if (result.kind === "NOT_FOUND") {
+        toast.message("商品情報が見つかりませんでした。バーコードは記録したので手入力してください。");
+        return;
+      }
+
+      toast.message("商品情報の取得に失敗しました。バーコードは記録したので手入力してください。");
+    } finally {
+      setIsLookingUpBarcode(false);
     }
   };
 
@@ -115,9 +144,10 @@ export function AddProduct() {
               variant="outline"
               className="w-full h-12"
               onClick={() => setShowScanner(true)}
+              disabled={isLookingUpBarcode}
           >
             <ScanBarcode className="w-5 h-5 mr-2" />
-            バーコードをスキャン
+            {isLookingUpBarcode ? "検索中..." : "バーコードをスキャン"}
           </Button>
 
           {barcode && (
