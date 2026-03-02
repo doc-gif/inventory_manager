@@ -112,12 +112,12 @@ export function InstallPrompt() {
                                     <p className="flex text-left gap-1.5">
                                         <span className="shrink-0">3.</span>
                                         <span>
-                      下にスクロールして<br/>
-                      <span className="inline-flex items-center gap-1 font-medium mt-0.5">
-                        <PlusSquare className="w-3.5 h-3.5" />「ホーム画面に追加」
-                      </span>
-                      をタップ
-                    </span>
+                                            下にスクロールして<br/>
+                                            <span className="inline-flex items-center gap-1 font-medium mt-0.5">
+                                                <PlusSquare className="w-3.5 h-3.5" />「ホーム画面に追加」
+                                            </span>
+                                            をタップ
+                                        </span>
                                     </p>
                                 </div>
                             )}
@@ -126,17 +126,20 @@ export function InstallPrompt() {
                             {promptType === "ios-chrome" && (
                                 <div className="text-xs text-muted-foreground space-y-1.5 mt-2">
                                     <p className="flex items-center gap-1.5">
-                                        1. アドレスバーの <Share className="w-3.5 h-3.5" /> (共有) をタップ
+                                        1. アドレスバーの <Share className="w-3.5 h-3.5" /> をタップ
+                                    </p>
+                                    <p className="flex items-center gap-1.5">
+                                        2. <MoreHorizontal className="w-3.5 h-3.5" /> 「その他」をタップ
                                     </p>
                                     <p className="flex text-left gap-1.5">
-                                        <span className="shrink-0">2.</span>
+                                        <span className="shrink-0">3.</span>
                                         <span>
-                      下にスクロールして<br/>
-                      <span className="inline-flex items-center gap-1 font-medium mt-0.5">
-                        <PlusSquare className="w-3.5 h-3.5" />「ホーム画面に追加」
-                      </span>
-                      を選択
-                    </span>
+                                            下にスクロールして<br/>
+                                            <span className="inline-flex items-center gap-1 font-medium mt-0.5">
+                                                <PlusSquare className="w-3.5 h-3.5" />「ホーム画面に追加」
+                                            </span>
+                                            を選択
+                                        </span>
                                     </p>
                                 </div>
                             )}
