@@ -15,8 +15,8 @@ export async function lookupBarcodeViaFunctions(barcodeRaw: string): Promise<Bar
     return { ok: false, reason: "INVALID" };
   }
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL;
-  const url = `${baseUrl}/barcodeLookup?barcode=${encodeURIComponent(barcode)}`;
+  // const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const url = `https://asia-northeast1-inventry-manager-app.cloudfunctions.net/barcodeLookup?barcode=${encodeURIComponent(barcode)}`;
 
   try {
     const res = await fetch(url, { method: "GET" });
