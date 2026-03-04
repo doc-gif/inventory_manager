@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation
 // 💡 豆知識: `const DEBUG_MODE = import.meta.env.DEV;` と書くと、
 // ローカル開発(npm run dev)の時だけ自動でtrueになり、手動切り替えすら不要になります。
 // ============================================================================
-const DEBUG_MODE = true;
+// @ts-ignore
+const DEBUG_MODE = import.meta.env.DEV;
 
 interface BarcodeScannerProps {
   open: boolean;
