@@ -15,6 +15,7 @@ export async function lookupBarcodeViaFunctions(barcodeRaw: string): Promise<Bar
     return { ok: false, reason: "INVALID" };
   }
 
+  // @ts-ignore
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
   const url = `${baseUrl}/barcodeLookup?barcode=${encodeURIComponent(barcode)}`;
 
