@@ -13,6 +13,7 @@ import {
     isLowStock,
     type AddItemInput,
 } from "@/application/use-cases/InventoryManagementUtils";
+import { toast } from "sonner";
 
 type InventoryState = {
     items: InventoryItem[];
@@ -99,6 +100,30 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
         const nextItems = get().items.map((it) => {
             if (it.id !== id) return it;
             if (!(it.type === "volume" || it.type === "both")) return it;
+
+            // 「ストック＋残量(both)」タイプで、残量を 0（空）にしようとした場合
+            if (it.type === "both" && level === 0) {
+                if (it.count > 0) {
+                    // ストックがある場合：ストックを -1 して、残量を 5(満タン) にする
+                    toast.success(`「${it.name}」のストックを1つ開封しました`, {
+                        description: `未開封ストックは残り ${it.count - 1} 個です。`
+                    });
+
+                    return {
+                        ...it,
+                        count: it.count - 1,
+                        volumeLevel: 5,
+                        // 必要であれば開封日を今日に自動更新することも可能
+                        openedDate: new Date().toISOString().split('T')[0]
+                    };
+                } else {
+                    // ストックがない場合：そのまま 0（空）にする
+                    toast.error(`「${it.name}」を使い切りました。在庫がありません！`);
+                    return { ...it, volumeLevel: 0 };
+                }
+            }
+
+            // 通常の残量変更（または volume タイプの場合）
             return {...it, volumeLevel: level};
         });
         set({items: nextItems});

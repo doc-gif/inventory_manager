@@ -5,7 +5,7 @@ import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Label } from '@/presentation/components/ui/Label';
 import { Card } from '@/presentation/components/ui/Card';
-import {CATEGORIES, type Category, type ContentUnit, type ItemType} from '@/domain/models/inventory-management-types';
+import { type Category, type ContentUnit, type ItemType} from '@/domain/models/inventory-management-types';
 import { toast } from 'sonner';
 import { BarcodeScanner } from '@/presentation/pages/BarcodeScanner';
 import {useInventoryStore} from "@/application/stores/useInventoryStore";
@@ -189,174 +189,76 @@ export function AddProduct() {
             <Label>管理タイプ</Label>
             <div className="grid grid-cols-3 gap-2">
               <Card
-                  className={`p-3 cursor-pointer transition-all text-center ${
-                      type === 'count'
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : 'hover:border-muted-foreground/30'
-                  }`}
+                  className={`p-3 cursor-pointer transition-all text-center ${type === 'count' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
                   onClick={() => setType('count')}
               >
                 <Package className="w-6 h-6 mx-auto mb-1 text-primary" />
-                <p className="text-xs">個数管理</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  納豆、水など
-                </p>
+                <p className="text-xs font-bold">数量管理</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">個数をカウント</p>
               </Card>
               <Card
-                  className={`p-3 cursor-pointer transition-all text-center ${
-                      type === 'volume'
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : 'hover:border-muted-foreground/30'
-                  }`}
+                  className={`p-3 cursor-pointer transition-all text-center ${type === 'volume' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
                   onClick={() => setType('volume')}
               >
                 <Droplets className="w-6 h-6 mx-auto mb-1 text-blue-500" />
-                <p className="text-xs">残量管理</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  洗剤など
-                </p>
+                <p className="text-xs font-bold">残量管理</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">1本の残量を管理</p>
               </Card>
               <Card
-                  className={`p-3 cursor-pointer transition-all text-center ${
-                      type === 'both'
-                          ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                          : 'hover:border-muted-foreground/30'
-                  }`}
+                  className={`p-3 cursor-pointer transition-all text-center ${type === 'both' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
                   onClick={() => setType('both')}
               >
                 <Layers className="w-6 h-6 mx-auto mb-1 text-purple-500" />
-                <p className="text-xs">複合管理</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  ビール缶など
-                </p>
+                <p className="text-xs font-bold">ストック＋残量</p>
+                <p className="text-[9px] text-muted-foreground mt-0.5">化粧水・洗剤など</p>
               </Card>
             </div>
           </div>
 
-          {/* Category */}
-          <div className="space-y-1.5">
-            <Label>カテゴリ</Label>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                  <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategory(cat)}
-                      className={`px-3 py-1.5 rounded-full text-xs transition-colors ${
-                          category === cat
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
-                  >
-                    {cat}
-                  </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Count or Volume */}
+          {/* Count or Volume: type='both' の時のUIを大幅改善 */}
           {type === 'count' ? (
               <div className="space-y-1.5">
-                <Label htmlFor="count">数量</Label>
+                <Label htmlFor="count">在庫数</Label>
                 <div className="flex items-center gap-3">
-                  <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-10 w-10 rounded-full p-0"
-                      onClick={() => setCount(Math.max(0, count - 1))}
-                  >
-                    −
-                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(Math.max(0, count - 1))}>−</Button>
                   <span className="text-2xl w-12 text-center tabular-nums">{count}</span>
-                  <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-10 w-10 rounded-full p-0"
-                      onClick={() => setCount(count + 1)}
-                  >
-                    ＋
-                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(count + 1)}>＋</Button>
                 </div>
               </div>
           ) : type === 'volume' ? (
               <div className="space-y-1.5">
-                <Label>残量レベル</Label>
+                <Label>現在の残量</Label>
                 <div className="flex items-end gap-2 py-2">
                   {[1, 2, 3, 4, 5].map((i) => (
-                      <button
-                          key={i}
-                          type="button"
-                          onClick={() => setVolumeLevel(i)}
-                          className={`w-10 rounded transition-all ${
-                              i <= volumeLevel
-                                  ? volumeLevel <= 1
-                                      ? 'bg-red-500'
-                                      : volumeLevel <= 2
-                                          ? 'bg-orange-400'
-                                          : volumeLevel <= 3
-                                              ? 'bg-yellow-400'
-                                              : 'bg-emerald-500'
-                                  : 'bg-gray-200'
-                          }`}
-                          style={{ height: `${i * 8 + 12}px` }}
-                      />
+                      <button key={i} type="button" onClick={() => setVolumeLevel(i)} className={`w-10 rounded transition-all ${i <= volumeLevel ? (volumeLevel <= 1 ? 'bg-red-500' : volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 8 + 12}px` }} />
                   ))}
                 </div>
               </div>
           ) : (
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="count">数量</Label>
-                  <div className="flex items-center gap-3">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-10 w-10 rounded-full p-0"
-                        onClick={() => setCount(Math.max(0, count - 1))}
-                    >
-                      −
-                    </Button>
-                    <span className="text-2xl w-12 text-center tabular-nums">{count}</span>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-10 w-10 rounded-full p-0"
-                        onClick={() => setCount(count + 1)}
-                    >
-                      ＋
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>各個の残量レベル</Label>
-                  <div className="flex items-end gap-2 py-2">
+              /* 【改善】 ストック＋残量タイプの入力 */
+              <div className="space-y-6 bg-muted/20 p-4 rounded-xl border border-border">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-blue-600">
+                    <Droplets className="w-4 h-4" /> 使用中の1本目の残量
+                  </Label>
+                  <div className="flex items-end gap-2 py-1">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <button
-                            key={i}
-                            type="button"
-                            onClick={() => setVolumeLevel(i)}
-                            className={`w-10 rounded transition-all ${
-                                i <= volumeLevel
-                                    ? volumeLevel <= 1
-                                        ? 'bg-red-500'
-                                        : volumeLevel <= 2
-                                            ? 'bg-orange-400'
-                                            : volumeLevel <= 3
-                                                ? 'bg-yellow-400'
-                                                : 'bg-emerald-500'
-                                    : 'bg-gray-200'
-                            }`}
-                            style={{ height: `${i * 8 + 12}px` }}
-                        />
+                        <button key={i} type="button" onClick={() => setVolumeLevel(i)} className={`w-full max-w-[40px] rounded transition-all ${i <= volumeLevel ? (volumeLevel <= 1 ? 'bg-red-500' : volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 6 + 10}px` }} />
                     ))}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    各個の残量レベルを設定します（例：缶の残量）
-                  </p>
+                  <p className="text-[10px] text-muted-foreground">今使っているボトルの残量を設定します</p>
+                </div>
+
+                <div className="space-y-2 pt-4 border-t border-border/50">
+                  <Label className="flex items-center gap-2 text-primary">
+                    <Package className="w-4 h-4" /> 未開封のストック数
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(Math.max(0, count - 1))}>−</Button>
+                    <span className="text-2xl w-12 text-center tabular-nums">{count}</span>
+                    <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(count + 1)}>＋</Button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">棚に眠っている新品の数を設定します</p>
                 </div>
               </div>
           )}

@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { Minus, AlertTriangle, Clock, Tag, CalendarClock } from "lucide-react";
+import { Minus, AlertTriangle, Clock, Tag, CalendarClock, Package, Droplets } from "lucide-react";
 
 import type { InventoryItem } from "@/domain/models/inventory-management-types";
 import { getUnitPrice } from "@/domain/services/pricing";
@@ -116,58 +116,48 @@ export function InventoryCard({ item }: Props) {
           <div className="flex flex-col items-end gap-2 shrink-0">
             {item.type === "count" ? (
                 <div className="flex items-center gap-2">
-                  <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0 rounded-full"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        consumeCount(item.id);
-                      }}
-                      disabled={item.count <= 0}
-                  >
+                  <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full" onClick={(e) => { e.stopPropagation(); consumeCount(item.id); }} disabled={item.count <= 0}>
                     <Minus className="w-4 h-4" />
                   </Button>
                   <div className="text-center min-w-[3rem]">
-                <span
-                    className={`text-2xl tabular-nums ${
-                        item.count === 0 ? "text-red-500" : lowStock ? "text-orange-500" : "text-foreground"
-                    }`}
-                >
-                  {item.count}
-                </span>
+                    <span className={`text-2xl tabular-nums ${item.count === 0 ? "text-red-500" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
                     <p className="text-[10px] text-muted-foreground -mt-0.5">個</p>
                   </div>
                 </div>
             ) : item.type === "volume" ? (
-                <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
+                <div className="flex flex-col items-center">
+                  <p className="text-[9px] text-muted-foreground mb-1">現在の残量</p>
+                  <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
+                </div>
             ) : (
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 w-7 p-0 rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          consumeCount(item.id);
-                        }}
-                        disabled={item.count <= 0}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </Button>
-                    <div className="text-center min-w-[2rem]">
-                  <span
-                      className={`text-xl tabular-nums ${
-                          item.count === 0 ? "text-red-500" : lowStock ? "text-orange-500" : "text-foreground"
-                      }`}
-                  >
-                    {item.count}
-                  </span>
-                      <p className="text-[9px] text-muted-foreground -mt-0.5">個</p>
+                /* 【改善】ストック＋使用中（both）の表示 */
+                <div className="flex flex-col items-end gap-2.5 bg-muted/30 p-2 rounded-lg border border-border/50">
+                  {/* ストック部分 */}
+                  <div className="flex items-center justify-between w-full gap-3">
+                    <span className="text-[10px] text-primary flex items-center gap-1 font-medium">
+                      <Package className="w-3 h-3" /> ストック
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Button size="sm" variant="outline" className="h-6 w-6 p-0 rounded-full bg-background" onClick={(e) => { e.stopPropagation(); consumeCount(item.id); }} disabled={item.count <= 0}>
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <span className={`text-lg font-bold tabular-nums w-4 text-right ${item.count === 0 ? "text-muted-foreground" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
                     </div>
                   </div>
-                  <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
+
+                  {/* 区切り線 */}
+                  <div className="w-full h-px bg-border/50" />
+
+                  {/* 残量部分 */}
+                  <div className="flex flex-col items-end w-full">
+                    <span className="text-[10px] text-blue-600 flex items-center gap-1 font-medium mb-1">
+                      <Droplets className="w-3 h-3" /> 使用中
+                    </span>
+                    {/* ここでゲージを操作すると、Storeに書いた自動補充ロジックが走る */}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
+                    </div>
+                  </div>
                 </div>
             )}
           </div>

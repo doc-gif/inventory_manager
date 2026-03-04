@@ -11,7 +11,6 @@ import {
   CalendarClock,
   Package,
   Droplets,
-  AlertTriangle,
   Clock,
   X,
 } from 'lucide-react';
@@ -21,7 +20,7 @@ import { Label } from '@/presentation/components/ui/Label';
 import { Card } from '@/presentation/components/ui/Card';
 import { Badge } from '@/presentation/components/ui/Badge';
 import { VolumeGauge } from '@/presentation/components/VolumeGauge';
-import {CATEGORIES, VOLUME_LABELS, type Category, type ContentUnit} from '@/domain/models/inventory-management-types';
+import {CATEGORIES, type Category, type ContentUnit} from '@/domain/models/inventory-management-types';
 import { toast } from 'sonner';
 import {useInventoryStore} from "@/application/stores/useInventoryStore";
 import {formatContent, getUnitPrice} from "@/domain/services/pricing";
@@ -123,6 +122,32 @@ export function ProductDetail() {
   const unitPrice = getUnitPrice(item);
   const contentLabel = formatContent(item.contentAmount, item.contentUnit);
 
+  const handleVolumeChange = (newLevel: number) => {
+    if (!item) return;
+
+    if (item.type === 'both' && newLevel === 0) {
+      if (item.count > 0) {
+        // ストックがある場合：ストックを-1して、残量を5(満タン)に復活させる
+        updateItem(item.id, {
+          count: item.count - 1,
+          volumeLevel: 5,
+          openedDate: new Date().toISOString().split('T')[0] // 自動補充時に開封日を今日に更新
+        });
+        toast.success('ストックを1つ開封しました！', {
+          description: `未開封ストックは残り ${item.count - 1} 個です。`,
+          icon: <Package className="w-4 h-4" />
+        });
+      } else {
+        // ストックがない場合：そのまま0にする（空の状態）
+        setVolumeLevel(item.id, 0);
+        toast.error('使い切りました。在庫がありません！');
+      }
+    } else {
+      // 通常の残量変更
+      setVolumeLevel(item.id, newLevel);
+    }
+  };
+
   const handleDelete = () => {
     deleteItem(item.id);
     toast.success(`「${item.name}」を削除しました`);
@@ -219,94 +244,44 @@ export function ProductDetail() {
               {/* Stock display */}
               <div className="pt-2 border-t border-border">
                 {item.type === 'count' ? (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">在庫数</p>
-                    <div className="flex items-center gap-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-12 w-12 rounded-full p-0"
-                        onClick={() => consumeCount(item.id)}
-                        disabled={item.count <= 0}
-                      >
-                        −
-                      </Button>
-                      <span
-                        className={`text-4xl tabular-nums ${
-                          item.count === 0
-                            ? 'text-red-500'
-                            : lowStock
-                            ? 'text-orange-500'
-                            : ''
-                        }`}
-                      >
-                        {item.count}
-                      </span>
-                      <span className="text-muted-foreground">個</span>
-                      {lowStock && (
-                        <Badge variant="destructive" className="gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          在庫少
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ) : item.type === 'volume' ? (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">残量</p>
-                    <VolumeGauge
-                      level={item.volumeLevel}
-                      onChange={(level) => setVolumeLevel(item.id, level)}
-                    />
-                    {lowStock && (
-                      <Badge variant="destructive" className="gap-1 mt-2">
-                        <AlertTriangle className="w-3 h-3" />
-                        残量少
-                      </Badge>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">在庫数</p>
+                      <p className="text-xs text-muted-foreground mb-2 font-bold">未開封の在庫</p>
                       <div className="flex items-center gap-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-12 w-12 rounded-full p-0"
-                          onClick={() => consumeCount(item.id)}
-                          disabled={item.count <= 0}
-                        >
-                          −
-                        </Button>
-                        <span
-                          className={`text-4xl tabular-nums ${
-                            item.count === 0
-                              ? 'text-red-500'
-                              : lowStock
-                              ? 'text-orange-500'
-                              : ''
-                          }`}
-                        >
-                          {item.count}
-                        </span>
-                        <span className="text-muted-foreground">個</span>
-                        {lowStock && (
-                          <Badge variant="destructive" className="gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            在庫少
-                          </Badge>
-                        )}
+                        <Button variant="outline" size="sm" className="h-12 w-12 rounded-full p-0" onClick={() => consumeCount(item.id)} disabled={item.count <= 0}>−</Button>
+                        <span className={`text-4xl tabular-nums ${item.count === 0 ? 'text-red-500' : lowStock ? 'text-orange-500' : ''}`}>{item.count}</span>
+                        <span className="text-muted-foreground text-sm">個</span>
+                        {lowStock && <Badge variant="destructive">在庫少</Badge>}
                       </div>
                     </div>
+                ) : item.type === 'volume' ? (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">各個の残量</p>
-                      <VolumeGauge
-                        level={item.volumeLevel}
-                        onChange={(level) => setVolumeLevel(item.id, level)}
-                      />
+                      <p className="text-xs text-muted-foreground mb-2 font-bold">現在の残量</p>
+                      <VolumeGauge level={item.volumeLevel} onChange={(level) => setVolumeLevel(item.id, level)} />
+                      {lowStock && <Badge variant="destructive" className="mt-2">残量少</Badge>}
                     </div>
-                  </div>
+                ) : (
+                    /* 【改善】 ストック＋使用中タイプの詳細表示 */
+                    <div className="space-y-6">
+                      <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100">
+                        <p className="text-xs text-blue-600 mb-2 font-bold flex items-center gap-1">
+                          <Droplets className="w-3 h-3" /> 使用中の1本目の残量
+                        </p>
+                        <VolumeGauge level={item.volumeLevel} onChange={handleVolumeChange} />
+                        <p className="text-[10px] text-muted-foreground mt-2">ゲージを左端(空)にするとストックから自動で補充されます</p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-primary mb-2 font-bold flex items-center gap-1">
+                          <Package className="w-3 h-3" /> 未開封のストック
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <Button variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => consumeCount(item.id)} disabled={item.count <= 0}>−</Button>
+                          <span className={`text-3xl tabular-nums ${item.count === 0 ? 'text-muted-foreground' : lowStock ? 'text-orange-500' : ''}`}>{item.count}</span>
+                          <span className="text-muted-foreground text-sm">個</span>
+                          {lowStock && <Badge variant="destructive">在庫少</Badge>}
+                        </div>
+                      </div>
+                    </div>
                 )}
               </div>
 
@@ -454,56 +429,24 @@ export function ProductDetail() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label>数量</Label>
-                  <div className="flex items-center gap-3">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-10 w-10 rounded-full p-0"
-                      onClick={() => setEditCount(Math.max(0, editCount - 1))}
-                    >
-                      −
-                    </Button>
-                    <span className="text-2xl w-12 text-center tabular-nums">{editCount}</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-10 w-10 rounded-full p-0"
-                      onClick={() => setEditCount(editCount + 1)}
-                    >
-                      ＋
-                    </Button>
+                <div className="space-y-6 bg-muted/20 p-4 rounded-xl border border-border">
+                  <div className="space-y-1.5">
+                    <Label className="text-blue-600 font-bold">使用中の1本目の残量</Label>
+                    <div className="flex items-end gap-2 py-2">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                          <button key={i} type="button" onClick={() => setEditVolumeLevel(i)} className={`w-full rounded transition-all ${i <= editVolumeLevel ? (editVolumeLevel <= 1 ? 'bg-red-500' : 'bg-blue-500') : 'bg-gray-200'}`} style={{ height: `${i * 6 + 10}px` }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 pt-4 border-t border-border/50">
+                    <Label className="text-primary font-bold">未開封ストック数</Label>
+                    <div className="flex items-center gap-3">
+                      <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setEditCount(Math.max(0, editCount - 1))}>−</Button>
+                      <span className="text-2xl w-12 text-center tabular-nums">{editCount}</span>
+                      <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setEditCount(editCount + 1)}>＋</Button>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>各個の残量</Label>
-                  <div className="flex items-end gap-2 py-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setEditVolumeLevel(i)}
-                        className={`w-10 rounded transition-all ${
-                          i <= editVolumeLevel
-                            ? editVolumeLevel <= 1
-                              ? 'bg-red-500'
-                              : editVolumeLevel <= 2
-                              ? 'bg-orange-400'
-                              : editVolumeLevel <= 3
-                              ? 'bg-yellow-400'
-                              : 'bg-emerald-500'
-                            : 'bg-gray-200'
-                        }`}
-                        style={{ height: `${i * 8 + 12}px` }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">
