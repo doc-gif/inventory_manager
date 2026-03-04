@@ -15,8 +15,8 @@ export async function lookupBarcodeViaFunctions(barcodeRaw: string): Promise<Bar
     return { ok: false, reason: "INVALID" };
   }
 
-  // const baseUrl = import.meta.env.VITE_API_BASE_URL;
-  const url = `https://asia-northeast1-inventry-manager-app.cloudfunctions.net/barcodeLookup?barcode=${encodeURIComponent(barcode)}`;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const url = `${baseUrl}/barcodeLookup?barcode=${encodeURIComponent(barcode)}`;
 
   try {
     const res = await fetch(url, { method: "GET" });
@@ -25,10 +25,14 @@ export async function lookupBarcodeViaFunctions(barcodeRaw: string): Promise<Bar
     if (res.status === 429) return { ok: false, reason: "RATE_LIMIT" };
     if (!res.ok) return { ok: false, reason: "SERVER" };
 
-    const data = (await res.json()) as { suggestion?: BarcodeProductSuggestion | null };
-    if (!data?.suggestion) return { ok: false, reason: "NOT_FOUND" };
+    // 1. data を直接 BarcodeProductSuggestion として受け取る
+    const data = (await res.json()) as BarcodeProductSuggestion;
 
-    return { ok: true, suggestion: data.suggestion };
+    // 2. data 自体が存在するか、または商品名(name)が取れているかで判定する
+    if (!data || !data.name) return { ok: false, reason: "NOT_FOUND" };
+
+    // 3. data そのものを suggestion として返す
+    return { ok: true, suggestion: data };
   } catch {
     return { ok: false, reason: "NETWORK" };
   }

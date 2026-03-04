@@ -1,8 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, Camera } from 'lucide-react';
+import { X, Camera, Search, Bug } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/Button';
+import { Input } from '@/presentation/components/ui/Input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog';
+
+// ============================================================================
+// 🛠️ デバッグモードの切り替えフラグ
+// true  : カメラを起動せず、PCでのテスト用に「手動入力フォーム」を表示します。
+// false : 本番環境用。通常通りスマホのカメラを起動します。
+//
+// 💡 豆知識: `const DEBUG_MODE = import.meta.env.DEV;` と書くと、
+// ローカル開発(npm run dev)の時だけ自動でtrueになり、手動切り替えすら不要になります。
+// ============================================================================
+const DEBUG_MODE = true;
 
 interface BarcodeScannerProps {
   open: boolean;
@@ -15,14 +26,19 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // デバッグ（手動入力）用の状態
+  const [manualInput, setManualInput] = useState("");
+
   useEffect(() => {
     if (!open) return;
+
+    // 🛑 デバッグモード時はカメラの初期化処理を完全にスキップする
+    if (DEBUG_MODE) return;
 
     let intervalId: number | null = null;
     let cancelled = false;
 
     const startScanner = async () => {
-      // 1. DOM要素が確実に存在するまで待つ
       const checkElement = setInterval(async () => {
         const element = document.getElementById('barcode-reader');
         if (element) {
@@ -35,19 +51,17 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
                 { facingMode: 'environment' },
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 async (text) => {
-                  // 1回読めたら停止して返す（連続発火防止）
                   try {
                     if (scannerRef.current?.isScanning) {
                       await scannerRef.current.stop();
                     }
-                  } catch {
-                    // stop失敗は握りつぶし（UIは次に進める）
-                  }
+                  } catch {}
                   setScanning(false);
 
                   const code = String(text).trim();
                   if (code) onScan(code);
-                  onClose(); },
+                  onClose();
+                },
                 (msg) => { /* スキャン中... */ }
             );
             setScanning(true);
@@ -55,7 +69,7 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
             setError('カメラへのアクセスを許可してください。');
           }
         }
-      }, 100); // 100msごとにDOM出現をチェック
+      }, 100);
     };
 
     void startScanner();
@@ -81,22 +95,55 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
     onClose();
   };
 
+  // デバッグ用：手動入力の送信処理
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = manualInput.trim();
+    if (code) {
+      onScan(code); // スキャン成功時と同じ処理を呼ぶ
+      onClose();
+    }
+  };
+
   return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Camera className="w-5 h-5" />
-              バーコードをスキャン
+              {DEBUG_MODE ? "バーコードを手入力 (デバッグ)" : "バーコードをスキャン"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            {error ? (
+            {DEBUG_MODE ? (
+                /* 🔵 デバッグモード用のUI */
+                <div className="py-2 space-y-4">
+                  <div className="p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs flex items-center gap-2">
+                    <Bug className="w-4 h-4 shrink-0" />
+                    デバッグモードが有効です。カメラは起動しません。
+                  </div>
+                  <form onSubmit={handleManualSubmit} className="flex gap-2">
+                    <Input
+                        placeholder="例: 4901301326232"
+                        value={manualInput}
+                        onChange={(e) => setManualInput(e.target.value)}
+                        className="flex-1"
+                        autoFocus
+                    />
+                    <Button type="submit" disabled={!manualInput.trim()}>
+                      <Search className="w-4 h-4 mr-1" />
+                      検索
+                    </Button>
+                  </form>
+                </div>
+            ) : error ? (
+                /* 🔴 カメラエラー時のUI */
                 <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
             ) : (
+                /* 🟢 通常のカメラUI */
                 <>
-                  <div id="barcode-reader" className="w-full rounded-lg overflow-hidden" />
+                  <div id="barcode-reader" className="w-full rounded-lg overflow-hidden bg-black/5" />
                   <p className="text-xs text-muted-foreground text-center">
                     バーコードまたはQRコードをカメラに向けてください
                   </p>
@@ -108,7 +155,7 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
                 </>
             )}
 
-            <Button variant="outline" onClick={handleClose} className="w-full">
+            <Button variant="outline" onClick={handleClose} className="w-full mt-2">
               <X className="w-4 h-4 mr-2" />
               キャンセル
             </Button>
