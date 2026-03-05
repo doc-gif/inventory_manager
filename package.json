@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:all": "firebase deploy"
   },
   "dependencies": {
     "react": "^18.3.1",
