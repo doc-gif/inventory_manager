@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { useHydrateInventory } from "@/presentation/hooks/useHydrateInventory";
 import React from "react";
 import {InstallPrompt} from "@/presentation/components/InstallPrompt";
+import { ReloadPrompt } from "@/presentation/components/ReloadPrompt";
 
 type NavItem = {
     path: string;
@@ -31,6 +32,7 @@ export function LayoutPage() {
       <Outlet />
 
         <InstallPrompt />
+        <ReloadPrompt />
 
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border">
         <div className="max-w-lg mx-auto flex items-center justify-around py-1.5 px-2">

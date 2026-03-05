@@ -11,7 +11,7 @@ export default defineConfig({
         tailwindcss(),
         tsconfigPaths(),
         VitePWA({
-            registerType: 'autoUpdate', // アプリが更新されたら自動で最新版を読み込む
+            registerType: 'prompt',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png'], // アイコン類
             manifest: {
                 name: '在庫管理アプリ', // スマホに表示される正式名称
