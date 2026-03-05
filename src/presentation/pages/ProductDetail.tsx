@@ -547,14 +547,14 @@ export function ProductDetail() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-4 bg-muted/10 p-3 rounded-lg border border-border/50">
                             <div className="space-y-1.5">
                                 <Label>開封日</Label>
                                 <Input
                                     type="date"
                                     value={editOpenedDate}
                                     onChange={(e) => setEditOpenedDate(e.target.value)}
-                                    className="h-11"
+                                    className="h-11 w-full"
                                 />
                             </div>
                             <div className="space-y-1.5">
@@ -563,7 +563,7 @@ export function ProductDetail() {
                                     type="number"
                                     value={editExpiryDays}
                                     onChange={(e) => setEditExpiryDays(e.target.value)}
-                                    className="h-11"
+                                    className="h-11 w-full"
                                 />
                             </div>
                         </div>
