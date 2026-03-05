@@ -11,7 +11,8 @@ const db = getFirestore();
 const corsHandler = cors({ origin: true });
 
 // シークレットの定義
-const extDbApiKey = defineSecret("EXTERNAL_DB_API_KEY");
+const extDbApiKey = defineSecret("EXTERNAL_DB_API_KEY"); // 楽天
+const yahooApiKey = defineSecret("YAHOO_API_KEY");       // Yahoo
 const braveApiKey = defineSecret("BRAVE_SEARCH_API_KEY");
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
@@ -42,7 +43,15 @@ interface ProductSuggestion {
     contentAmount?: number;
     contentUnit?: "pcs" | "ml" | "g";
     confidence?: "high" | "medium" | "low";
-    source?: "external_db" | "web_ai" | "unknown";
+    source?: "yahoo_api" | "rakuten_api" | "open_food_facts" | "web_ai" | "unknown";
+}
+
+// 商品名から管理タイプを自動推測するヘルパー関数
+function guessTypeFromName(itemName: string): "count" | "volume" | "both" {
+    if (/シャンプー|リンス|コンディショナー|トリートメント|洗剤|柔軟剤|漂白剤|化粧水|乳液|美容液|クレンジング|ボディソープ|ハンドソープ|芳香剤/.test(itemName)) {
+        return "both";
+    }
+    return "count";
 }
 
 // AIに強要するJSONスキーマ定義
@@ -78,7 +87,7 @@ const productSchema: Schema = {
 
 export const barcodeLookup = onRequest(
     {
-        secrets: [extDbApiKey, braveApiKey, geminiApiKey],
+        secrets: [extDbApiKey, yahooApiKey, braveApiKey, geminiApiKey],
         region: "asia-northeast1",
         timeoutSeconds: 30,
     },
@@ -92,8 +101,7 @@ export const barcodeLookup = onRequest(
 
                 const clientIp = req.ip || req.socket.remoteAddress || "unknown";
                 if (isRateLimited(clientIp)) {
-                    console.warn(`[RateLimit] IP: ${clientIp} exceeded limit.`);
-                    res.status(429).json({ error: "RATE_LIMIT_EXCEEDED", reason: "Too many requests. Please try again later." });
+                    res.status(429).json({ error: "RATE_LIMIT_EXCEEDED", reason: "Too many requests." });
                     return;
                 }
 
@@ -103,50 +111,96 @@ export const barcodeLookup = onRequest(
                     return;
                 }
 
-                // 【変更点】 永続的な商品マスター (products) から検索
+                // キャッシュ（マスター）確認
                 const productRef = db.collection("products").doc(barcode);
                 const productDoc = await productRef.get();
                 if (productDoc.exists) {
-                    // キャッシュではなくマスターデータなので、期限チェックなしで即座に返す
                     res.status(200).json(productDoc.data());
                     return;
                 }
 
                 let suggestion: ProductSuggestion | null = null;
 
-                // STEP 1: 楽天API
+                // ==========================================
+                // STEP 1: Yahoo!ショッピングAPI (JANコード専用検索でヒット率高)
+                // ==========================================
                 try {
-                    const YOUR_CLOUDFLARE_URL = "https://inventory-manager-eh6.pages.dev/";
-                    const rakutenUrl = `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601?applicationId=${extDbApiKey.value()}&keyword=${barcode}&hits=1&format=json`;
+                    const yahooUrl = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${yahooApiKey.value()}&jan_code=${barcode}&results=1`;
+                    const yahooRes = await axios.get(yahooUrl);
 
-                    const extRes = await axios.get(rakutenUrl, {
-                        headers: { "Referer": YOUR_CLOUDFLARE_URL }
-                    });
-
-                    if (extRes.data.Items && extRes.data.Items.length > 0) {
-                        const item = extRes.data.Items[0].Item;
-                        const itemName = item.itemName;
-
-                        // 👇 新規追加: 商品名から管理タイプ(type)を自動で推測する
-                        let guessedType: "count" | "volume" | "both" = "count";
-                        if (/シャンプー|リンス|コンディショナー|トリートメント|洗剤|柔軟剤|漂白剤|化粧水|乳液|美容液|クレンジング|ボディソープ|ハンドソープ|芳香剤/.test(itemName)) {
-                            guessedType = "both";
-                        }
-
+                    if (yahooRes.data.hits && yahooRes.data.hits.length > 0) {
+                        const item = yahooRes.data.hits[0];
                         suggestion = {
                             barcode,
-                            name: itemName.substring(0, 50),
+                            name: item.name.substring(0, 50),
                             category: "その他",
-                            type: guessedType, // 推測したタイプをセット
-                            source: "external_db",
+                            type: guessTypeFromName(item.name),
+                            source: "yahoo_api",
                             confidence: "high"
                         };
                     }
                 } catch (error: any) {
-                    console.error(`[RakutenAPI] Error for barcode ${barcode}: ${error.message}`);
+                    console.error(`[YahooAPI] Error for barcode ${barcode}: ${error.message}`);
                 }
 
-                // STEP 2: Web検索(Brave) + AI(Gemini)
+                // ==========================================
+                // STEP 2: 楽天市場API (Yahooで見つからなかった場合のフォールバック)
+                // ==========================================
+                if (!suggestion) {
+                    try {
+                        const YOUR_CLOUDFLARE_URL = "https://inventory-manager-xxxx.pages.dev";
+                        const rakutenUrl = `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601?applicationId=${extDbApiKey.value()}&keyword=${barcode}&hits=1&format=json`;
+
+                        const extRes = await axios.get(rakutenUrl, { headers: { "Referer": YOUR_CLOUDFLARE_URL } });
+
+                        if (extRes.data.Items && extRes.data.Items.length > 0) {
+                            const item = extRes.data.Items[0].Item;
+                            suggestion = {
+                                barcode,
+                                name: item.itemName.substring(0, 50),
+                                category: "その他",
+                                type: guessTypeFromName(item.itemName),
+                                source: "rakuten_api",
+                                confidence: "high"
+                            };
+                        }
+                    } catch (error: any) {
+                        console.error(`[RakutenAPI] Error for barcode ${barcode}: ${error.message}`);
+                    }
+                }
+
+                // ==========================================
+                // STEP 3: Open Food Facts (食品の世界最大DB・キー不要)
+                // ==========================================
+                if (!suggestion) {
+                    try {
+                        const offUrl = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+                        const offRes = await axios.get(offUrl);
+
+                        if (offRes.data.status === 1 && offRes.data.product) {
+                            const p = offRes.data.product;
+                            // 日本語名があれば優先し、無ければ英語名を使用
+                            const name = p.product_name_ja || p.product_name;
+                            if (name) {
+                                suggestion = {
+                                    barcode,
+                                    name: name.substring(0, 50),
+                                    brand: p.brands ? p.brands.split(',')[0] : undefined,
+                                    category: "食品・飲料",
+                                    type: "count",
+                                    source: "open_food_facts",
+                                    confidence: "high"
+                                };
+                            }
+                        }
+                    } catch (error: any) {
+                        console.error(`[OpenFoodFacts] Error for barcode ${barcode}: ${error.message}`);
+                    }
+                }
+
+                // ==========================================
+                // STEP 4: Brave Search + Gemini AI (最終手段)
+                // ==========================================
                 if (!suggestion) {
                     try {
                         const braveUrl = `https://api.search.brave.com/res/v1/web/search?q=${barcode}&count=5`;
@@ -186,20 +240,21 @@ export const barcodeLookup = onRequest(
                     }
                 }
 
-                // STEP 3: マスターデータベースへの保存とレスポンス
+                // ==========================================
+                // マスターへの保存とレスポンス
+                // ==========================================
                 if (suggestion) {
-                    // 【変更点】 有効期限の代わりに、登録日時を安全な方法(FieldValue)で記録
                     await productRef.set({
                         ...suggestion,
                         createdAt: FieldValue.serverTimestamp(),
                     });
                     res.status(200).json(suggestion);
                 } else {
-                    res.status(404).json({ error: "NOT_FOUND", reason: "Could not find any product information for the given barcode." });
+                    res.status(404).json({ error: "NOT_FOUND", reason: "Could not find any product information." });
                 }
             } catch (error: any) {
                 console.error(`[UnhandledError] ${error.message}`);
-                res.status(500).json({ error: "INTERNAL_SERVER_ERROR", reason: "An unexpected error occurred while processing your request." });
+                res.status(500).json({ error: "INTERNAL_SERVER_ERROR", reason: "An unexpected error occurred." });
             }
         });
     }
