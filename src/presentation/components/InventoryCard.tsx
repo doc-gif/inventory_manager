@@ -59,76 +59,75 @@ export function InventoryCard({ item }: Props) {
       >
         <div className="flex flex-col gap-3">
 
-          {/* 上部エリア: 商品情報（横幅いっぱい使える） */}
+          {/* 上部エリア: 商品情報 */}
           <div className="w-full">
             <div className="flex items-start gap-2 mb-1">
               <span className="text-sm mt-0.5">{getCategoryEmoji(item.category)}</span>
-              {/* truncate を外し、改行を許容するか、2行までで省略(line-clamp-2)にする */}
               <h3 className={`font-medium leading-tight ${lowStock || expired ? "text-red-700" : ""}`}>
                 {item.name}
               </h3>
             </div>
 
-            {item.brand && <p className="text-xs text-muted-foreground mb-2 pl-6">{item.brand}</p>}
+            {/* 👇 情報メタデータ: 縦幅を圧縮し、横並び（flex-wrap）で右側の余白を埋める */}
+            <div className="pl-7 mt-1.5 flex flex-col gap-1.5">
 
-            <div className="flex flex-wrap items-center gap-1.5 pl-6">
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                {item.category}
-              </Badge>
+              {/* 1行目: ブランドとバッジ類をまとめる */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {item.brand && <span className="text-xs text-muted-foreground font-medium mr-1">{item.brand}</span>}
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                  {item.category}
+                </Badge>
+                {lowStock && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 gap-0.5">
+                      <AlertTriangle className="w-2.5 h-2.5" />
+                      在庫少
+                    </Badge>
+                )}
+                {expired && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      期限切れ
+                    </Badge>
+                )}
+                {expiringSoon && !expired && (
+                    <Badge className="text-[10px] px-1.5 py-0 gap-0.5 bg-yellow-500 text-white hover:bg-yellow-600">
+                      <CalendarClock className="w-2.5 h-2.5" />
+                      残{daysLeft}日
+                    </Badge>
+                )}
+              </div>
 
-              {lowStock && (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 gap-0.5">
-                    <AlertTriangle className="w-2.5 h-2.5" />
-                    在庫少
-                  </Badge>
-              )}
-
-              {expired && (
-                  <Badge variant="destructive" className="text-[10px] px-1.5 py-0 gap-0.5">
-                    <Clock className="w-2.5 h-2.5" />
-                    期限切れ
-                  </Badge>
-              )}
-
-              {expiringSoon && !expired && (
-                  <Badge className="text-[10px] px-1.5 py-0 gap-0.5 bg-yellow-500 text-white hover:bg-yellow-600">
-                    <CalendarClock className="w-2.5 h-2.5" />
-                    残{daysLeft}日
-                  </Badge>
+              {/* 2行目: お店と価格情報をまとめる */}
+              {((lowestPrice !== null && item.price > 0) || unitPrice || item.shop) && (
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                    {item.shop && (
+                        <div className="flex items-center gap-1 text-primary/80 font-medium">
+                          <Store className="w-3 h-3" />
+                          {item.shop}
+                        </div>
+                    )}
+                    {lowestPrice !== null && item.price > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Tag className="w-3 h-3" />
+                          底値 ¥{lowestPrice.toLocaleString()}
+                          {item.price <= lowestPrice && <span className="text-emerald-600 ml-0.5 font-bold">★最安</span>}
+                        </div>
+                    )}
+                    {unitPrice && (
+                        <div className="flex items-center gap-0.5">
+                          <span className="text-muted-foreground/40">/</span>
+                          {unitPrice.label}
+                        </div>
+                    )}
+                  </div>
               )}
             </div>
-
-            {((lowestPrice !== null && item.price > 0) || unitPrice) && (
-                <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground pl-6">
-                  {item.shop && (
-                      <div className="flex items-center gap-1 text-primary/80 font-medium">
-                        <Store className="w-3 h-3" />
-                        {item.shop}
-                      </div>
-                  )}
-
-                  {lowestPrice !== null && item.price > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Tag className="w-3 h-3" />
-                        底値 ¥{lowestPrice.toLocaleString()}
-                        {item.price <= lowestPrice && <span className="text-emerald-600 ml-1">★ 最安値</span>}
-                      </div>
-                  )}
-
-                  {unitPrice && (
-                      <div className="flex items-center gap-1">
-                        <span className="inline-block w-3" />
-                        単位あたり {unitPrice.label}
-                      </div>
-                  )}
-                </div>
-            )}
           </div>
 
           {/* 区切り線 */}
           <div className="w-full h-px bg-border/50" />
 
-          {/* 下部エリア: 操作・状態（タイプによって出し分ける） */}
+          {/* 下部エリア: 操作・状態（変更なし） */}
           <div className="w-full flex justify-end">
 
             {item.type === "count" ? (
