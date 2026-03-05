@@ -39,6 +39,7 @@ export interface InventoryItem {
 
     purchaseDate: string; // yyyy-mm-dd
     price: number;
+    shop?: string;
 
     openedDate: string | null; // yyyy-mm-dd
     expiryDays: number | null;
@@ -66,6 +67,7 @@ export interface PurchaseRecord {
 
     price: number;
     purchaseDate: string; // yyyy-mm-dd
+    shop?: string;
 
     type: ItemType;
     category: Category;

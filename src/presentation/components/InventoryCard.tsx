@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router";
-import { Minus, AlertTriangle, Clock, Tag, CalendarClock, Package, Droplets } from "lucide-react";
+import { Minus, AlertTriangle, Clock, Tag, CalendarClock, Package, Droplets, Store } from "lucide-react";
 
 import type { InventoryItem } from "@/domain/models/inventory-management-types";
 import { getUnitPrice } from "@/domain/services/pricing";
@@ -100,6 +100,13 @@ export function InventoryCard({ item }: Props) {
 
             {((lowestPrice !== null && item.price > 0) || unitPrice) && (
                 <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground pl-6">
+                  {item.shop && (
+                      <div className="flex items-center gap-1 text-primary/80 font-medium">
+                        <Store className="w-3 h-3" />
+                        {item.shop}
+                      </div>
+                  )}
+
                   {lowestPrice !== null && item.price > 0 && (
                       <div className="flex items-center gap-1">
                         <Tag className="w-3 h-3" />

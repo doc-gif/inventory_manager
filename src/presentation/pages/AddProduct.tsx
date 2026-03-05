@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Package, Droplets, ScanBarcode, Layers } from 'lucide-react';
+import { ArrowLeft, Package, Droplets, ScanBarcode, Layers, Store } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Label } from '@/presentation/components/ui/Label';
@@ -13,7 +13,8 @@ import {lookupBarcodeForAddProduct} from "@/application/use-cases/BarcodeLookupS
 
 export function AddProduct() {
   const navigate = useNavigate();
-  const { addItem, items } = useInventoryStore();
+  const { addItem, items, getUniqueShops } = useInventoryStore();
+  const uniqueShops = getUniqueShops();
 
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -25,6 +26,7 @@ export function AddProduct() {
   const [purchaseDate, setPurchaseDate] = useState(
       new Date().toISOString().split('T')[0]
   );
+  const [shop, setShop] = useState('');
   const [openedDate, setOpenedDate] = useState('');
   const [expiryDays, setExpiryDays] = useState('');
   const [lowThreshold, setLowThreshold] = useState('2');
@@ -114,6 +116,7 @@ export function AddProduct() {
       volumeLevel: type === 'volume' || type === 'both' ? volumeLevel : 0,
       price: price ? parseInt(price) : 0,
       purchaseDate,
+      shop: shop.trim() || undefined,
       openedDate: openedDate || null,
       expiryDays: expiryDays ? parseInt(expiryDays) : null,
       lowThreshold: parseInt(lowThreshold) || 2,
@@ -182,6 +185,27 @@ export function AddProduct() {
                 placeholder="例：エリエール"
                 className="h-11"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="shop" className="flex items-center gap-1">
+              <Store className="w-3.5 h-3.5 text-muted-foreground" />
+              買った場所（お店）
+            </Label>
+            <Input
+                id="shop"
+                list="shop-list"
+                value={shop}
+                onChange={(e) => setShop(e.target.value)}
+                placeholder="例：マツモトキヨシ"
+                className="h-11"
+            />
+            {/* datalist を使って過去の履歴からサジェストを表示 */}
+            <datalist id="shop-list">
+              {uniqueShops.map((s) => (
+                  <option key={s} value={s} />
+              ))}
+            </datalist>
           </div>
 
           {/* Type selection */}

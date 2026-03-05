@@ -1,5 +1,5 @@
 import {create} from "zustand";
-import type {InventoryItem, PurchaseRecord} from "@/domain/models/inventory-management-types";
+import type {ContentUnit, InventoryItem, PurchaseRecord} from "@/domain/models/inventory-management-types";
 import type {InventoryRepository} from "@/domain/repositories/inventory-repository-interface";
 import {LocalStorageInventoryRepository} from "@/infrastructure/repositories/local-storage-inventory-manager";
 import {
@@ -8,6 +8,7 @@ import {
     getDaysUntilExpiry,
     getLowestPrice,
     getUniqueHistoryItems,
+    getUniqueShops,
     isExpired,
     isExpiringSoon,
     isLowStock,
@@ -39,6 +40,7 @@ type InventoryState = {
     archivedItems: () => InventoryItem[];
     getLowestPrice: (name: string) => number | null;
     getUniqueHistoryItems: () => PurchaseRecord[];
+    getUniqueShops: () => string[];
     isLowStock: (item: InventoryItem) => boolean;
     isExpiringSoon: (item: InventoryItem) => boolean;
     isExpired: (item: InventoryItem) => boolean;
@@ -63,20 +65,79 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     },
 
     addItem: (input) => {
-        const item = createInventoryItem({
-            ...input,
-            name: input.name.trim(),
-            brand: input.brand.trim(),
-        });
-        const record = createPurchaseRecord(item);
+        const normalizedName = input.name.trim();
+        const normalizedBrand = input.brand.trim();
 
-        const nextItems = [item, ...get().items];
+        // 1. 既存のアイテムを探す（名前の大文字・小文字を区別せずに完全一致するかチェック）
+        const existingItemIndex = get().items.findIndex(
+            (it) => it.name.toLowerCase() === normalizedName.toLowerCase()
+        );
+
+        let nextItems = [...get().items];
+        let targetItem: InventoryItem;
+
+        if (existingItemIndex >= 0) {
+            // ==========================================
+            // 💡 既存商品があった場合：新しく作らずに「合算・更新」する
+            // ==========================================
+            const existing = nextItems[existingItemIndex];
+
+            // 新しく追加するストック数
+            const countToAdd = (input.type === 'count' || input.type === 'both') ? input.count : 0;
+
+            targetItem = {
+                ...existing,
+                // 管理タイプやカテゴリは、今回入力された最新のもので上書き
+                type: input.type,
+                category: input.category,
+
+                // ストック数は既存の数に「足し算」する！
+                count: existing.count + countToAdd,
+
+                // 残量管理(volume)の場合は新品に交換したとみなして5(満タン)にする。
+                // 詳細管理(both)の場合は、今使っているボトルの残量(existing.volumeLevel)を維持する。
+                volumeLevel: input.type === 'volume' ? 5 : existing.volumeLevel,
+
+                // 価格や購入日は最新のもので上書き
+                price: input.price,
+                purchaseDate: input.purchaseDate,
+
+                // バーコードや内容量などの詳細設定は、入力があれば上書き、なければ既存を維持
+                openedDate: input.openedDate || existing.openedDate,
+                expiryDays: input.expiryDays || existing.expiryDays,
+                lowThreshold: input.lowThreshold,
+                barcode: input.barcode || existing.barcode,
+                contentAmount: input.contentAmount || existing.contentAmount,
+                contentUnit: (input.contentUnit as ContentUnit) || existing.contentUnit,
+                shop: input.shop || existing.shop,
+
+                // もし過去に使い切って「アーカイブ」されていたら、自動で復元する
+                isArchived: false,
+            };
+
+            // 配列の該当箇所を上書き
+            nextItems[existingItemIndex] = targetItem;
+        } else {
+            // ==========================================
+            // 💡 既存商品がない場合：通常通り「新規作成」する
+            // ==========================================
+            targetItem = createInventoryItem({
+                ...input,
+                name: normalizedName,
+                brand: normalizedBrand,
+            });
+            // 新しいアイテムを配列の先頭に追加
+            nextItems = [targetItem, ...nextItems];
+        }
+
+        // 🚨 購入履歴（History）だけは、既存更新・新規作成に関わらず必ず「1回の履歴」として追加する
+        const record = createPurchaseRecord(targetItem);
         const nextHistory = [record, ...get().history];
 
         set({items: nextItems, history: nextHistory});
         void persist(nextItems, nextHistory);
 
-        return item;
+        return targetItem;
     },
 
     updateItem: (id, updates) => {
@@ -161,6 +222,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
             openedDate: null,
             expiryDays: null,
             lowThreshold: record.type === "count" || record.type === "both" ? 2 : 1,
+            shop: record.shop,
         });
     },
 
@@ -169,6 +231,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
 
     getLowestPrice: (name) => getLowestPrice(get().history, name),
     getUniqueHistoryItems: () => getUniqueHistoryItems(get().history),
+    getUniqueShops: () => getUniqueShops(get().items, get().history),
 
     isLowStock: (item) => isLowStock(item),
     isExpiringSoon: (item) => isExpiringSoon(item),

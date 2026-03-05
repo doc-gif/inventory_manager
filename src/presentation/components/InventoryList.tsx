@@ -1,6 +1,6 @@
 import React from "react";
 import {useNavigate} from "react-router";
-import {Plus, Package, Search, AlertTriangle} from "lucide-react";
+import {Plus, Package, Search, AlertTriangle, Store, ChevronDown} from "lucide-react";
 
 import {CATEGORIES} from "@/domain/models/inventory-management-types";
 import {useInventoryStore} from "@/application/stores/useInventoryStore";
@@ -14,10 +14,13 @@ export function InventoryList() {
 
     const items = useInventoryStore((s) => s.items);
     const isLowStock = useInventoryStore((s) => s.isLowStock);
+    const getUniqueShops = useInventoryStore((s) => s.getUniqueShops);
     const activeItems = React.useMemo(() => items.filter((it) => !it.isArchived), [items]);
+    const uniqueShops = getUniqueShops();
 
     const [search, setSearch] = React.useState("");
     const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+    const [selectedShop, setSelectedShop] = React.useState<string | null>(null);
     const [showLowOnly, setShowLowOnly] = React.useState(false);
 
     const filteredItems = React.useMemo(() => {
@@ -28,10 +31,11 @@ export function InventoryList() {
             result = result.filter((item) => item.name.toLowerCase().includes(q) || item.brand.toLowerCase().includes(q));
         }
         if (selectedCategory) result = result.filter((item) => item.category === selectedCategory);
+        if (selectedShop) result = result.filter((item) => item.shop === selectedShop);
         if (showLowOnly) result = result.filter((item) => isLowStock(item));
 
         return result;
-    }, [activeItems, search, selectedCategory, showLowOnly, isLowStock]);
+    }, [activeItems, search, selectedCategory, selectedShop, showLowOnly, isLowStock]);
 
     const lowStockCount = React.useMemo(
         () => activeItems.filter((item) => isLowStock(item)).length,
@@ -76,6 +80,32 @@ export function InventoryList() {
                         <AlertTriangle className="w-3 h-3"/>
                         在庫少 {lowStockCount > 0 && `(${lowStockCount})`}
                     </button>
+
+                    {uniqueShops.length > 0 && (
+                        <div className="relative shrink-0 flex items-center">
+                            <Store className="absolute left-2.5 w-3 h-3 pointer-events-none text-muted-foreground" />
+                            <select
+                                value={selectedShop || ""}
+                                onChange={(e) => setSelectedShop(e.target.value || null)}
+                                className={`appearance-none pl-7 pr-6 py-1 rounded-full text-xs transition-colors outline-none cursor-pointer border ${
+                                    selectedShop
+                                        ? "bg-primary/10 text-primary border-primary/20 font-medium"
+                                        : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80"
+                                }`}
+                            >
+                                <option value="">お店: すべて</option>
+                                {uniqueShops.map((shop) => (
+                                    <option key={shop} value={shop}>
+                                        {shop}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-2 w-3 h-3 pointer-events-none text-muted-foreground" />
+                        </div>
+                    )}
+
+                    {/* 縦の区切り線（お店フィルターとカテゴリフィルターの間） */}
+                    <div className="w-px h-4 bg-border shrink-0 mx-0.5" />
 
                     <button
                         type="button"

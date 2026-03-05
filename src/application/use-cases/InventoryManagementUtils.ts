@@ -9,6 +9,7 @@ export type AddItemInput = {
   volumeLevel: number;
   price: number;
   purchaseDate: string;
+  shop?: string;
   openedDate: string | null;
   expiryDays: number | null;
   lowThreshold: number;
@@ -33,6 +34,7 @@ export function createInventoryItem(input: AddItemInput): InventoryItem {
     volumeLevel: input.volumeLevel,
     price: input.price,
     purchaseDate: input.purchaseDate,
+    shop: input.shop && input.shop.trim() !== "" ? input.shop.trim() : undefined,
     openedDate: input.openedDate,
     expiryDays: input.expiryDays,
     lowThreshold: input.lowThreshold,
@@ -50,6 +52,7 @@ export function createPurchaseRecord(item: InventoryItem): PurchaseRecord {
     brand: item.brand,
     price: item.price,
     purchaseDate: item.purchaseDate,
+    shop: item.shop,
     type: item.type,
     category: item.category,
   };
@@ -107,4 +110,24 @@ export function getUniqueHistoryItems(history: PurchaseRecord[]): PurchaseRecord
     if (!seen.has(key)) seen.set(key, record);
   }
   return Array.from(seen.values());
+}
+
+export function getUniqueShops(items: InventoryItem[], history: PurchaseRecord[]): string[] {
+  const shopSet = new Set<string>();
+
+  // 1. 現在の在庫リストから抽出（後から編集で追加されたものを拾う）
+  for (const item of items) {
+    if (item.shop && item.shop.trim() !== "") {
+      shopSet.add(item.shop.trim());
+    }
+  }
+
+  // 2. 過去の履歴からも抽出（現在は在庫がないが、過去に買ったお店を拾う）
+  for (const record of history) {
+    if (record.shop && record.shop.trim() !== "") {
+      shopSet.add(record.shop.trim());
+    }
+  }
+
+  return Array.from(shopSet).sort();
 }
