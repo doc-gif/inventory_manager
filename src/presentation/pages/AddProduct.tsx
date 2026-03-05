@@ -415,13 +415,11 @@ export function AddProduct() {
           </Button>
         </form>
 
-        {showScanner && (
-            <BarcodeScanner
-                open={showScanner}
-                onScan={handleBarcodeScanned}
-                onClose={() => setShowScanner(false)}
-            />
-        )}
+        <BarcodeScanner
+            open={showScanner}
+            onScan={handleBarcodeScanned}
+            onClose={() => setShowScanner(false)}
+        />
       </div>
   );
 }
