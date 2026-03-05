@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowLeft, Package, Droplets, ScanBarcode, Layers, Store } from 'lucide-react';
+import { ArrowLeft, Package, Droplets, ScanBarcode, Layers, Store, Info } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Label } from '@/presentation/components/ui/Label';
@@ -154,9 +154,22 @@ export function AddProduct() {
           </Button>
 
           {barcode && (
-              <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
-                <p className="text-xs text-muted-foreground">バーコード</p>
-                <p className="text-sm font-mono">{barcode}</p>
+              <div className="space-y-2">
+                <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <p className="text-xs text-muted-foreground">スキャンしたバーコード</p>
+                  <p className="text-sm font-mono">{barcode}</p>
+                </div>
+
+                <div className="flex items-start gap-1.5 p-2.5 bg-muted/30 rounded-md border border-border/50 text-muted-foreground">
+                  <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <div className="text-[10px] leading-relaxed space-y-0.5">
+                    <p className="font-bold text-foreground">違う商品が表示された場合</p>
+                    <p>
+                      バーコードが過去の別商品から使い回されている場合などがあります。
+                      お手数ですが、<span className="text-foreground font-medium underline decoration-muted-foreground/50 underline-offset-2">正しい情報に手動で書き換えて</span>登録してください。
+                    </p>
+                  </div>
+                </div>
               </div>
           )}
 
