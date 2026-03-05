@@ -59,7 +59,7 @@ const productSchema: Schema = {
         type: {
             type: Type.STRING,
             enum: ["count", "volume", "both"],
-            description: "管理単位（個数管理ならcount、容量管理ならvolume、両方ならboth）"
+            description: "管理方法の指定。食品やティッシュなどの個数管理は'count'。香水など残量のみ管理は'volume'。シャンプー、トリートメント、洗剤、柔軟剤、化粧水、ボディソープなど『未開封ストック数』と『使用中ボトルの残量』の2つを同時に管理する日用品・液体消耗品は'both'を指定すること。"
         },
         contentAmount: { type: Type.NUMBER, description: "内容量（数値のみ）" },
         contentUnit: {
@@ -125,10 +125,19 @@ export const barcodeLookup = onRequest(
 
                     if (extRes.data.Items && extRes.data.Items.length > 0) {
                         const item = extRes.data.Items[0].Item;
+                        const itemName = item.itemName;
+
+                        // 👇 新規追加: 商品名から管理タイプ(type)を自動で推測する
+                        let guessedType: "count" | "volume" | "both" = "count";
+                        if (/シャンプー|リンス|コンディショナー|トリートメント|洗剤|柔軟剤|漂白剤|化粧水|乳液|美容液|クレンジング|ボディソープ|ハンドソープ|芳香剤/.test(itemName)) {
+                            guessedType = "both";
+                        }
+
                         suggestion = {
                             barcode,
-                            name: item.itemName.substring(0, 50),
+                            name: itemName.substring(0, 50),
                             category: "その他",
+                            type: guessedType, // 推測したタイプをセット
                             source: "external_db",
                             confidence: "high"
                         };
