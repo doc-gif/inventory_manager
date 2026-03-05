@@ -116,7 +116,7 @@ export function ProductDetail() {
             category: editCategory,
             openedDate: editOpenedDate || null,
             expiryDays: editExpiryDays ? parseInt(editExpiryDays) : null,
-            lowThreshold: parseInt(editLowThreshold) || 2,
+            lowThreshold: isNaN(parseInt(editLowThreshold)) ? 2 : parseInt(editLowThreshold),
             contentAmount: parsedContentAmount,
             contentUnit: parsedContentAmount ? editContentUnit : undefined,
             shop: editShop.trim() || undefined,

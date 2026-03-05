@@ -119,7 +119,7 @@ export function AddProduct() {
       shop: shop.trim() || undefined,
       openedDate: openedDate || null,
       expiryDays: expiryDays ? parseInt(expiryDays) : null,
-      lowThreshold: parseInt(lowThreshold) || 2,
+      lowThreshold: isNaN(parseInt(lowThreshold)) ? 2 : parseInt(lowThreshold),
       barcode: barcode || null,
       contentAmount: parsedContentAmount,
       contentUnit: parsedContentAmount ? contentUnit : undefined,
