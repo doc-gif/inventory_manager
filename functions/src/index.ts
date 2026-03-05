@@ -116,7 +116,7 @@ export const barcodeLookup = onRequest(
 
                 // STEP 1: 楽天API
                 try {
-                    const YOUR_CLOUDFLARE_URL = "https://inventory-manager-xxxx.pages.dev";
+                    const YOUR_CLOUDFLARE_URL = "https://inventory-manager-eh6.pages.dev/";
                     const rakutenUrl = `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601?applicationId=${extDbApiKey.value()}&keyword=${barcode}&hits=1&format=json`;
 
                     const extRes = await axios.get(rakutenUrl, {
