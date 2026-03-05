@@ -56,9 +56,19 @@ export function createPurchaseRecord(item: InventoryItem): PurchaseRecord {
 }
 
 export function isLowStock(item: InventoryItem): boolean {
-  if (item.type === "count") return item.count <= item.lowThreshold;
-  if (item.type === "volume") return item.volumeLevel <= 2;
-  return item.count <= item.lowThreshold || item.volumeLevel <= 2;
+  if (item.type === "count") {
+    // 数量管理: 設定した閾値（lowThreshold）以下になったらアラート
+    return item.count <= item.lowThreshold;
+  }
+
+  if (item.type === "volume") {
+    // 残量管理: ゲージが2（残りわずか）以下になったらアラート
+    return item.volumeLevel <= 2;
+  }
+
+  // 複合管理（both）:
+  // 「ストックが設定した閾値以下」 かつ 「使用中のゲージが2以下」 の時にアラート
+  return item.count <= item.lowThreshold && item.volumeLevel <= 2;
 }
 
 export function isExpiringSoon(item: InventoryItem): boolean {

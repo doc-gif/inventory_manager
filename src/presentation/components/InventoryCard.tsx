@@ -57,16 +57,21 @@ export function InventoryCard({ item }: Props) {
           }`}
           onClick={() => navigate(`/item/${item.id}`)}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm">{getCategoryEmoji(item.category)}</span>
-              <h3 className={`truncate ${lowStock || expired ? "text-red-700" : ""}`}>{item.name}</h3>
+        <div className="flex flex-col gap-3">
+
+          {/* 上部エリア: 商品情報（横幅いっぱい使える） */}
+          <div className="w-full">
+            <div className="flex items-start gap-2 mb-1">
+              <span className="text-sm mt-0.5">{getCategoryEmoji(item.category)}</span>
+              {/* truncate を外し、改行を許容するか、2行までで省略(line-clamp-2)にする */}
+              <h3 className={`font-medium leading-tight ${lowStock || expired ? "text-red-700" : ""}`}>
+                {item.name}
+              </h3>
             </div>
 
-            {item.brand && <p className="text-xs text-muted-foreground mb-2 truncate">{item.brand}</p>}
+            {item.brand && <p className="text-xs text-muted-foreground mb-2 pl-6">{item.brand}</p>}
 
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 pl-6">
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                 {item.category}
               </Badge>
@@ -93,13 +98,13 @@ export function InventoryCard({ item }: Props) {
               )}
             </div>
 
-            {(lowestPrice !== null && item.price > 0) || unitPrice ? (
-                <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground">
+            {((lowestPrice !== null && item.price > 0) || unitPrice) && (
+                <div className="mt-2 space-y-0.5 text-[11px] text-muted-foreground pl-6">
                   {lowestPrice !== null && item.price > 0 && (
                       <div className="flex items-center gap-1">
                         <Tag className="w-3 h-3" />
                         底値 ¥{lowestPrice.toLocaleString()}
-                        {item.price <= lowestPrice && <span className="text-emerald-600 ml-1">★ 最安値で購入済み</span>}
+                        {item.price <= lowestPrice && <span className="text-emerald-600 ml-1">★ 最安値</span>}
                       </div>
                   )}
 
@@ -110,57 +115,65 @@ export function InventoryCard({ item }: Props) {
                       </div>
                   )}
                 </div>
-            ) : null}
+            )}
           </div>
 
-          <div className="flex flex-col items-end gap-2 shrink-0">
+          {/* 区切り線 */}
+          <div className="w-full h-px bg-border/50" />
+
+          {/* 下部エリア: 操作・状態（タイプによって出し分ける） */}
+          <div className="w-full flex justify-end">
+
             {item.type === "count" ? (
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full" onClick={(e) => { e.stopPropagation(); consumeCount(item.id); }} disabled={item.count <= 0}>
-                    <Minus className="w-4 h-4" />
-                  </Button>
-                  <div className="text-center min-w-[3rem]">
-                    <span className={`text-2xl tabular-nums ${item.count === 0 ? "text-red-500" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
-                    <p className="text-[10px] text-muted-foreground -mt-0.5">個</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-muted-foreground font-medium">在庫数</span>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 rounded-full" onClick={(e) => { e.stopPropagation(); consumeCount(item.id); }} disabled={item.count <= 0}>
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <div className="text-center min-w-[3rem]">
+                      <span className={`text-2xl tabular-nums ${item.count === 0 ? "text-red-500" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
+                      <span className="text-xs text-muted-foreground ml-0.5">個</span>
+                    </div>
                   </div>
                 </div>
             ) : item.type === "volume" ? (
-                <div className="flex flex-col items-center">
-                  <p className="text-[9px] text-muted-foreground mb-1">現在の残量</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] text-muted-foreground font-medium">現在の残量</span>
                   <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
                 </div>
             ) : (
-                /* 【改善】ストック＋使用中（both）の表示 */
-                <div className="flex flex-col items-end gap-2.5 bg-muted/30 p-2 rounded-lg border border-border/50">
-                  {/* ストック部分 */}
-                  <div className="flex items-center justify-between w-full gap-3">
-                    <span className="text-[10px] text-primary flex items-center gap-1 font-medium">
-                      <Package className="w-3 h-3" /> ストック
+                /* ストック＋使用中（both）の横並び表示 */
+                <div className="flex items-stretch gap-2 w-full">
+
+                  {/* 使用中エリア */}
+                  <div className="flex-1 flex items-center justify-between bg-blue-50/50 p-2 rounded-lg border border-blue-100">
+                    <span className="text-[10px] text-blue-600 flex flex-col items-start font-medium">
+                      <span className="flex items-center gap-1"><Droplets className="w-3 h-3" /> 使用中</span>
+                    </span>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
+                    </div>
+                  </div>
+
+                  {/* ストックエリア */}
+                  <div className="flex-1 flex items-center justify-between bg-muted/30 p-2 rounded-lg border border-border/50">
+                    <span className="text-[10px] text-primary flex flex-col items-start font-medium">
+                      <span className="flex items-center gap-1"><Package className="w-3 h-3" /> ストック</span>
                     </span>
                     <div className="flex items-center gap-1.5">
                       <Button size="sm" variant="outline" className="h-6 w-6 p-0 rounded-full bg-background" onClick={(e) => { e.stopPropagation(); consumeCount(item.id); }} disabled={item.count <= 0}>
                         <Minus className="w-3 h-3" />
                       </Button>
-                      <span className={`text-lg font-bold tabular-nums w-4 text-right ${item.count === 0 ? "text-muted-foreground" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
+                      <span className={`text-xl font-bold tabular-nums min-w-[1.5rem] text-right ${item.count === 0 ? "text-muted-foreground" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
+                      <span className="text-[10px] text-muted-foreground">個</span>
                     </div>
                   </div>
 
-                  {/* 区切り線 */}
-                  <div className="w-full h-px bg-border/50" />
-
-                  {/* 残量部分 */}
-                  <div className="flex flex-col items-end w-full">
-                    <span className="text-[10px] text-blue-600 flex items-center gap-1 font-medium mb-1">
-                      <Droplets className="w-3 h-3" /> 使用中
-                    </span>
-                    {/* ここでゲージを操作すると、Storeに書いた自動補充ロジックが走る */}
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
-                    </div>
-                  </div>
                 </div>
             )}
           </div>
+
         </div>
       </Card>
   );
