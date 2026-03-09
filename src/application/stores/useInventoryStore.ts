@@ -141,9 +141,46 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
     },
 
     updateItem: (id, updates) => {
-        const nextItems = get().items.map((it) => (it.id === id ? {...it, ...updates} : it));
-        set({items: nextItems});
-        void persist(nextItems, get().history);
+        let updatedItem: InventoryItem | null = null;
+
+        // 1. 商品データの更新
+        const nextItems = get().items.map((it) => {
+            if (it.id === id) {
+                updatedItem = { ...it, ...updates };
+                return updatedItem;
+            }
+            return it;
+        });
+
+        let nextHistory = get().history;
+
+        // 2. もし「価格」または「購入日」または「買った場所」が更新されていた場合、
+        //    それを新しい購入履歴として history に追加する
+        if (
+            updatedItem &&
+            (updates.price !== undefined || updates.purchaseDate !== undefined || updates.shop !== undefined)
+        ) {
+            // ※ここで既存の createPurchaseRecord を使っても良いですが、
+            //   新しい情報（updates）を反映した履歴を手動で作ります。
+            const newRecord: PurchaseRecord = {
+                id: crypto.randomUUID(),
+                itemId: id,
+                name: updatedItem.name,
+                brand: updatedItem.brand,
+                type: updatedItem.type,
+                category: updatedItem.category,
+                price: updatedItem.price,
+                purchaseDate: updatedItem.purchaseDate,
+                shop: updatedItem.shop,
+            };
+
+            // 履歴の先頭に追加
+            nextHistory = [newRecord, ...nextHistory];
+        }
+
+        // 3. 状態の更新と保存
+        set({ items: nextItems, history: nextHistory });
+        void persist(nextItems, nextHistory);
     },
 
     consumeCount: (id) => {
