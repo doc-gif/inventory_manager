@@ -1,4 +1,4 @@
-import { Outlet, useLocation, useNavigate } from "react-router";
+import { Outlet, useLocation, useNavigate, ScrollRestoration } from "react-router";
 import { Package, History, Archive, Plus, LucideIcon } from "lucide-react";
 import { Toaster } from "sonner";
 
@@ -29,7 +29,8 @@ export function LayoutPage() {
 
   return (
     <div className="min-h-screen bg-background font-[Noto_Sans_JP,sans-serif] max-w-lg mx-auto relative">
-      <Outlet />
+        <ScrollRestoration />
+        <Outlet />
 
         <InstallPrompt />
         <ReloadPrompt />
