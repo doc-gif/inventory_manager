@@ -130,7 +130,7 @@ export function AddProduct() {
   };
 
   return (
-      <div className="pb-24">
+      <div className="pb-24 overflow-x-hidden">
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="p-1">
@@ -226,7 +226,7 @@ export function AddProduct() {
             <Label>管理タイプ</Label>
             <div className="grid grid-cols-3 gap-2">
               <Card
-                  className={`p-3 cursor-pointer transition-all text-center ${type === 'count' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
+                  className={`p-2 cursor-pointer transition-all text-center ${type === 'count' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
                   onClick={() => setType('count')}
               >
                 <Package className="w-6 h-6 mx-auto mb-1 text-primary" />
@@ -234,7 +234,7 @@ export function AddProduct() {
                 <p className="text-[9px] text-muted-foreground mt-0.5">個数をカウント</p>
               </Card>
               <Card
-                  className={`p-3 cursor-pointer transition-all text-center ${type === 'volume' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
+                  className={`p-2 cursor-pointer transition-all text-center ${type === 'volume' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
                   onClick={() => setType('volume')}
               >
                 <Droplets className="w-6 h-6 mx-auto mb-1 text-blue-500" />
@@ -242,7 +242,7 @@ export function AddProduct() {
                 <p className="text-[9px] text-muted-foreground mt-0.5">1本の残量を管理</p>
               </Card>
               <Card
-                  className={`p-3 cursor-pointer transition-all text-center ${type === 'both' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
+                  className={`p-2 cursor-pointer transition-all text-center ${type === 'both' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
                   onClick={() => setType('both')}
               >
                 <Layers className="w-6 h-6 mx-auto mb-1 text-purple-500" />
@@ -267,7 +267,7 @@ export function AddProduct() {
                 <Label>現在の残量</Label>
                 <div className="flex items-end gap-2 py-2">
                   {[1, 2, 3, 4, 5].map((i) => (
-                      <button key={i} type="button" onClick={() => setVolumeLevel(i)} className={`w-10 rounded transition-all ${i <= volumeLevel ? (volumeLevel <= 1 ? 'bg-red-500' : volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 8 + 12}px` }} />
+                      <button key={i} type="button" onClick={() => setVolumeLevel(i)} className={`w-full max-w-[40px] rounded transition-all ${i <= volumeLevel ? (volumeLevel <= 1 ? 'bg-red-500' : volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 8 + 12}px` }} />
                   ))}
                 </div>
               </div>
