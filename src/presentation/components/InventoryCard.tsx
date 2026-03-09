@@ -97,30 +97,41 @@ export function InventoryCard({ item }: Props) {
                 )}
               </div>
 
-              {/* 2行目: お店と価格情報をまとめる */}
-              {((lowestPrice !== null && item.price > 0) || unitPrice || item.shop) && (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                    {item.shop && (
-                        <div className="flex items-center gap-1 text-primary/80 font-medium">
-                          <Store className="w-3 h-3" />
-                          {item.shop}
-                        </div>
-                    )}
-                    {lowestPrice !== null && item.price > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Tag className="w-3 h-3" />
-                          底値 ¥{lowestPrice.toLocaleString()}
-                          {item.price <= lowestPrice && <span className="text-emerald-600 ml-0.5 font-bold">★最安</span>}
-                        </div>
-                    )}
-                    {unitPrice && (
-                        <div className="flex items-center gap-0.5">
-                          <span className="text-muted-foreground/40">/</span>
-                          {unitPrice.label}
-                        </div>
-                    )}
-                  </div>
-              )}
+              {/* 2行目: お店・内容量・価格情報を整理して表示 */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
+
+                {/* 1. お店情報 */}
+                {item.shop && (
+                    <div className="flex items-center gap-1 text-primary/80 font-medium">
+                      <Store className="w-3 h-3" />
+                      {item.shop}
+                    </div>
+                )}
+
+                {/* 👇 2. 新規追加: 内容量表示 */}
+                {item.contentAmount && item.contentUnit && (
+                    <div className="flex items-center gap-1 font-medium bg-muted/30 px-1.5 py-0.5 rounded text-foreground/70">
+                      {item.contentAmount}{item.contentUnit}
+                    </div>
+                )}
+
+                {/* 3. 価格・コスパ情報（底値と単位価格を明確に分ける） */}
+                {lowestPrice !== null && item.price > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 text-foreground">
+                        <Tag className="w-3 h-3 text-emerald-600" />
+                        底値 ¥{lowestPrice.toLocaleString()}
+                      </div>
+
+                      {/* 単位価格は「（100gあたり〜）」のように括弧でくくってサブ情報化する */}
+                      {unitPrice && (
+                          <span className="text-[10px] text-muted-foreground/70">
+                            ({unitPrice.label})
+                          </span>
+                      )}
+                    </div>
+                )}
+              </div>
             </div>
           </div>
 
