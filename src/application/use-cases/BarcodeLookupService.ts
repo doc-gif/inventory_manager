@@ -16,7 +16,10 @@ export async function lookupBarcodeForAddProduct(params: {
 }): Promise<BarcodeLookupResult> {
   const { barcode, items } = params;
 
-  // 1) ローカル（過去商品）ヒット
+  // ==========================================
+  // 1) 個人の履歴（ローカルの在庫データ）を最優先
+  // ※ユーザー自身が名前や容量を独自に編集している可能性があるため、それを尊重する
+  // ==========================================
   const hit = items.find((it) => it.barcode === barcode);
   if (hit) {
     return {
@@ -35,25 +38,39 @@ export async function lookupBarcodeForAddProduct(params: {
     };
   }
 
-  // 2) キャッシュヒット（オンライン不要）
+  // ==========================================
+  // 2) ネットワーク優先（Firestore / Rowy の最新データを取得）
+  // ==========================================
+  try {
+    const remote = await lookupBarcodeViaFunctions(barcode);
+
+    if (remote.ok) {
+      // 取得に成功したら、ローカルキャッシュを「最新の正しいデータ」で上書きしておく
+      setCachedBarcodeSuggestion({ barcode, suggestion: remote.suggestion });
+      return { kind: "HIT_REMOTE", suggestion: remote.suggestion };
+    }
+
+    // 明確に「データベースに存在しない」とサーバーが返してきた場合
+    // @ts-ignore
+    if (remote.reason === "NOT_FOUND") {
+      return { kind: "NOT_FOUND" };
+    }
+
+    // ここに到達するのは、レートリミット（API制限）やサーバーエラーの場合。
+    // そのまま下のステップ3（キャッシュへのフォールバック）へ進む。
+  } catch (error) {
+    // 完全に圏外（オフライン）で通信自体が失敗した場合もここでキャッチされ、ステップ3へ進む
+  }
+
+  // ==========================================
+  // 3) キャッシュへのフォールバック（オフライン時・サーバーエラー時の保険）
+  // ==========================================
   const cached = getCachedBarcodeSuggestion(barcode);
   if (cached) {
+    // サーバーと通信できなかったが、過去にスキャンした記憶（キャッシュ）がある場合はそれを返す
     return { kind: "HIT_CACHE", suggestion: cached };
   }
 
-  // 3) リモート（Functions）
-  const remote = await lookupBarcodeViaFunctions(barcode);
-  if (remote.ok) {
-    setCachedBarcodeSuggestion({ barcode, suggestion: remote.suggestion });
-    return { kind: "HIT_REMOTE", suggestion: remote.suggestion };
-  }
-
-  // ここから先は remote.ok === false が確定するので remote.reason が安全に参照できる
-  // @ts-ignore
-  if (remote.reason === "NOT_FOUND") {
-    return { kind: "NOT_FOUND" };
-  }
-
-  // @ts-ignore
-  return { kind: "FAILED", reason: remote.reason };
+  // キャッシュも無ければ、完全な通信エラーとして扱う
+  return { kind: "FAILED", reason: "NETWORK" };
 }
