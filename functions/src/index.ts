@@ -46,19 +46,11 @@ interface ProductSuggestion {
     source?: "yahoo_api" | "rakuten_api" | "open_food_facts" | "web_ai" | "unknown";
 }
 
-// 商品名から管理タイプを自動推測するヘルパー関数
-function guessTypeFromName(itemName: string): "count" | "volume" | "both" {
-    if (/シャンプー|リンス|コンディショナー|トリートメント|洗剤|柔軟剤|漂白剤|化粧水|乳液|美容液|クレンジング|ボディソープ|ハンドソープ|芳香剤/.test(itemName)) {
-        return "both";
-    }
-    return "count";
-}
-
 // AIに強要するJSONスキーマ定義
 const productSchema: Schema = {
     type: Type.OBJECT,
     properties: {
-        name: { type: Type.STRING, description: "抽出された商品名（送料無料などの装飾語は除外すること）" },
+        name: { type: Type.STRING, description: "抽出された純粋な商品名" },
         brand: { type: Type.STRING, description: "ブランド名やメーカー名" },
         category: {
             type: Type.STRING,
@@ -119,10 +111,11 @@ export const barcodeLookup = onRequest(
                     return;
                 }
 
-                let suggestion: ProductSuggestion | null = null;
+                let rawContext = "";
+                let detectedSource: "yahoo_api" | "rakuten_api" | "open_food_facts" | "web_ai" | "unknown" = "unknown";
 
                 // ==========================================
-                // STEP 1: Yahoo!ショッピングAPI (JANコード専用検索でヒット率高)
+                // STEP 1: Yahoo!ショッピングAPI
                 // ==========================================
                 try {
                     const yahooUrl = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${yahooApiKey.value()}&jan_code=${barcode}&results=1`;
@@ -130,39 +123,26 @@ export const barcodeLookup = onRequest(
 
                     if (yahooRes.data.hits && yahooRes.data.hits.length > 0) {
                         const item = yahooRes.data.hits[0];
-                        suggestion = {
-                            barcode,
-                            name: item.name.substring(0, 50),
-                            category: "その他",
-                            type: guessTypeFromName(item.name),
-                            source: "yahoo_api",
-                            confidence: "high"
-                        };
+                        rawContext = `商品名: ${item.name}\n説明: ${item.description || ""}`;
+                        detectedSource = "yahoo_api";
                     }
                 } catch (error: any) {
                     console.error(`[YahooAPI] Error for barcode ${barcode}: ${error.message}`);
                 }
 
                 // ==========================================
-                // STEP 2: 楽天市場API (Yahooで見つからなかった場合のフォールバック)
+                // STEP 2: 楽天市場API (Yahooで見つからなかった場合)
                 // ==========================================
-                if (!suggestion) {
+                if (!rawContext) {
                     try {
                         const YOUR_CLOUDFLARE_URL = "https://inventory-manager-xxxx.pages.dev";
                         const rakutenUrl = `https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601?applicationId=${extDbApiKey.value()}&keyword=${barcode}&hits=1&format=json`;
-
                         const extRes = await axios.get(rakutenUrl, { headers: { "Referer": YOUR_CLOUDFLARE_URL } });
 
                         if (extRes.data.Items && extRes.data.Items.length > 0) {
                             const item = extRes.data.Items[0].Item;
-                            suggestion = {
-                                barcode,
-                                name: item.itemName.substring(0, 50),
-                                category: "その他",
-                                type: guessTypeFromName(item.itemName),
-                                source: "rakuten_api",
-                                confidence: "high"
-                            };
+                            rawContext = `商品名: ${item.itemName}\n説明: ${item.itemCaption || ""}`;
+                            detectedSource = "rakuten_api";
                         }
                     } catch (error: any) {
                         console.error(`[RakutenAPI] Error for barcode ${barcode}: ${error.message}`);
@@ -170,27 +150,19 @@ export const barcodeLookup = onRequest(
                 }
 
                 // ==========================================
-                // STEP 3: Open Food Facts (食品の世界最大DB・キー不要)
+                // STEP 3: Open Food Facts (食品の世界最大DB)
                 // ==========================================
-                if (!suggestion) {
+                if (!rawContext) {
                     try {
                         const offUrl = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
                         const offRes = await axios.get(offUrl);
 
                         if (offRes.data.status === 1 && offRes.data.product) {
                             const p = offRes.data.product;
-                            // 日本語名があれば優先し、無ければ英語名を使用
                             const name = p.product_name_ja || p.product_name;
                             if (name) {
-                                suggestion = {
-                                    barcode,
-                                    name: name.substring(0, 50),
-                                    brand: p.brands ? p.brands.split(',')[0] : undefined,
-                                    category: "食品・飲料",
-                                    type: "count",
-                                    source: "open_food_facts",
-                                    confidence: "high"
-                                };
+                                rawContext = `商品名: ${name}\nブランド: ${p.brands || ""}\n容量: ${p.quantity || ""}`;
+                                detectedSource = "open_food_facts";
                             }
                         }
                     } catch (error: any) {
@@ -199,9 +171,9 @@ export const barcodeLookup = onRequest(
                 }
 
                 // ==========================================
-                // STEP 4: Brave Search + Gemini AI (最終手段)
+                // STEP 4: Brave Search (最終手段)
                 // ==========================================
-                if (!suggestion) {
+                if (!rawContext) {
                     try {
                         const braveUrl = `https://api.search.brave.com/res/v1/web/search?q=${barcode}&count=5`;
                         const braveRes = await axios.get(braveUrl, {
@@ -213,30 +185,52 @@ export const barcodeLookup = onRequest(
 
                         const results = braveRes.data.web?.results || [];
                         if (results.length > 0) {
-                            const searchContext = results.map((r: any) => `Title: ${r.title}\nSnippet: ${r.description}`).join("\n\n");
-
-                            const ai = new GoogleGenAI({ apiKey: geminiApiKey.value() });
-                            const aiResponse = await ai.models.generateContent({
-                                model: "gemini-2.5-flash",
-                                contents: `以下の検索結果から、バーコード(${barcode})に該当する商品情報を抽出してください。\n\n${searchContext}`,
-                                config: {
-                                    responseMimeType: "application/json",
-                                    responseSchema: productSchema,
-                                    temperature: 0.1,
-                                }
-                            });
-
-                            if (aiResponse.text) {
-                                const extractedData = JSON.parse(aiResponse.text);
-                                suggestion = {
-                                    barcode,
-                                    ...extractedData,
-                                    source: "web_ai"
-                                };
-                            }
+                            rawContext = results.map((r: any) => `Title: ${r.title}\nSnippet: ${r.description}`).join("\n\n");
+                            detectedSource = "web_ai";
                         }
                     } catch (error: any) {
                         console.error(`[WebAI] Error for barcode ${barcode}: ${error.message}`);
+                    }
+                }
+
+                // ==========================================
+                // STEP 5: Gemini AIによるデータのクレンジングと構造化
+                // ==========================================
+                let suggestion: ProductSuggestion | null = null;
+
+                if (rawContext) {
+                    try {
+                        const ai = new GoogleGenAI({ apiKey: geminiApiKey.value() });
+
+                        // AIに対する強力なプロンプト（指示）
+                        const prompt = `以下の検索結果データから、バーコード(${barcode})に該当する商品情報を抽出・整理してください。
+必ず以下のルールを厳守してください：
+1. 「送料無料」「あす楽」「××個セット」「ポイント〇倍」「【】で囲まれた宣伝文句」などのECサイト特有のノイズや装飾語を完全に削除し、純粋な商品名だけを 'name' に設定すること。
+2. ブランド名やメーカー名がわかる場合は 'brand' に設定すること。
+
+【検索結果データ】
+${rawContext}`;
+
+                        const aiResponse = await ai.models.generateContent({
+                            model: "gemini-3-flash",
+                            contents: prompt,
+                            config: {
+                                responseMimeType: "application/json",
+                                responseSchema: productSchema,
+                                temperature: 0.1, // 創造性より正確性を重視
+                            }
+                        });
+
+                        if (aiResponse.text) {
+                            const extractedData = JSON.parse(aiResponse.text);
+                            suggestion = {
+                                barcode,
+                                ...extractedData,
+                                source: detectedSource // どこから引っ張ってきたデータか（Yahooなど）を残す
+                            };
+                        }
+                    } catch (error: any) {
+                        console.error(`[GeminiParseError] ${error.message}`);
                     }
                 }
 
