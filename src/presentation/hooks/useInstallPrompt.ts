@@ -12,11 +12,18 @@ interface BeforeInstallPromptEvent extends Event {
 
 const DISMISS_KEY = "install_prompt_dismissed";
 
-export type PromptType = "ios-safari" | "ios-chrome" | "android" | "in-app-browser" | null;
+// 🌟 新規：文字列ユニオンから Enum に変更
+export enum PromptType {
+    IosSafari = "ios-safari",
+    IosChrome = "ios-chrome",
+    Android = "android",
+    InAppBrowser = "in-app-browser",
+}
 
 export function useInstallPrompt() {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-    const [promptType, setPromptType] = useState<PromptType>(null);
+    // Enum を使用した State 定義
+    const [promptType, setPromptType] = useState<PromptType | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
 
     useEffect(() => {
@@ -27,39 +34,39 @@ export function useInstallPrompt() {
         if (isStandalone) return;
 
         // 2. 過去に閉じていれば何もしない
+        // ⚠️ デバッグ（テスト）中、LINEで毎回表示させたい場合は以下の1行をコメントアウトしてください
         if (localStorage.getItem(DISMISS_KEY)) return;
 
         const ua = window.navigator.userAgent.toLowerCase();
 
-        // 3. 🌟 新規追加：アプリ内ブラウザ（LINE, Twitter, FB, IGなど）の検知を最優先で行う
-        const isInAppBrowser = /line|instagram|facebook|fbav|twitter|fb_iab/.test(ua);
+        // 3. アプリ内ブラウザの検知（Androidの汎用WebViewである 'wv' を追加）
+        const isInAppBrowser = /line|instagram|facebook|fbav|twitter|fb_iab|wv/.test(ua);
         if (isInAppBrowser) {
-            setPromptType("in-app-browser");
+            setPromptType(PromptType.InAppBrowser);
             setShowPrompt(true);
-            return; // アプリ内ブラウザの場合はここで処理終了
+            return;
         }
 
-        // 4. 完璧なiOS判定（iPadがMacのフリをしているケースもカバー）
+        // 4. iOS判定
         const isIOSDevice =
             /iphone|ipad|ipod/.test(ua) ||
             (ua.includes("mac") && "ontouchend" in document);
 
         if (isIOSDevice) {
-            // iOS Chrome か iOS Safari かを判定
             if (ua.includes("crios")) {
-                setPromptType("ios-chrome");
+                setPromptType(PromptType.IosChrome);
             } else {
-                setPromptType("ios-safari");
+                setPromptType(PromptType.IosSafari);
             }
             setShowPrompt(true);
             return;
         }
 
-        // 5. Android/PC用：ブラウザがPWAとして認めた時のみ発火
+        // 5. Android/PC用（標準ブラウザ）
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
-            setPromptType("android");
+            setPromptType(PromptType.Android);
             setShowPrompt(true);
         };
 

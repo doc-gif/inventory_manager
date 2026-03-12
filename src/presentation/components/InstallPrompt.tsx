@@ -2,7 +2,7 @@ import React from "react";
 import { X, Download, Share, PlusSquare, MoreHorizontal, Copy } from "lucide-react";
 import { Button } from "@/presentation/components/ui/Button";
 import { Card } from "@/presentation/components/ui/Card";
-import { useInstallPrompt } from "@/presentation/hooks/useInstallPrompt";
+import { useInstallPrompt, PromptType } from "@/presentation/hooks/useInstallPrompt";
 
 export function InstallPrompt() {
     const { showPrompt, promptType, handlers } = useInstallPrompt();
@@ -29,11 +29,11 @@ export function InstallPrompt() {
 
                         <div className="flex-1 pr-4">
                             <h3 className="font-semibold text-sm mb-1">
-                                {promptType === "in-app-browser" ? "インストールするには" : "アプリをホーム画面に追加"}
+                                {promptType === PromptType.InAppBrowser ? "インストールするには" : "アプリをホーム画面に追加"}
                             </h3>
 
                             {/* 🌟 アプリ内ブラウザ向けの案内 */}
-                            {promptType === "in-app-browser" && (
+                            {promptType === PromptType.InAppBrowser && (
                                 <div className="text-xs text-muted-foreground space-y-2 mt-2">
                                     <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 rounded-md font-medium text-[10px] mb-2 leading-tight">
                                         ⚠️ 現在アプリ内ブラウザで表示されています。<br/>インストールするには標準ブラウザで開き直してください。
@@ -59,7 +59,7 @@ export function InstallPrompt() {
                             )}
 
                             {/* iOS Safari 向けの案内 */}
-                            {promptType === "ios-safari" && (
+                            {promptType === PromptType.IosSafari && (
                                 <div className="text-xs text-muted-foreground space-y-1.5 mt-2">
                                     <p className="flex items-center gap-1.5">
                                         1. 右下の <MoreHorizontal className="w-3.5 h-3.5" /> をタップ
@@ -81,7 +81,7 @@ export function InstallPrompt() {
                             )}
 
                             {/* iOS Chrome 向けの案内 */}
-                            {promptType === "ios-chrome" && (
+                            {promptType === PromptType.IosChrome && (
                                 <div className="text-xs text-muted-foreground space-y-1.5 mt-2">
                                     <p className="flex items-center gap-1.5">
                                         1. アドレスバーの <Share className="w-3.5 h-3.5" /> をタップ
@@ -103,7 +103,7 @@ export function InstallPrompt() {
                             )}
 
                             {/* Android/PC 向けの案内 */}
-                            {promptType === "android" && (
+                            {promptType === PromptType.Android && (
                                 <>
                                     <p className="text-xs text-muted-foreground mb-3 mt-1">
                                         インストールすると、オフラインでもサクサク使えるようになります。
