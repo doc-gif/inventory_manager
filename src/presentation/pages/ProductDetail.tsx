@@ -64,6 +64,12 @@ export function ProductDetail() {
     const [editContentAmount, setEditContentAmount] = useState<string>("");
     const [editContentUnit, setEditContentUnit] = useState<ContentUnit>("pcs");
     const [editShop, setEditShop] = useState('');
+    const existingNames = Array.from(new Set(items.map(i => i.name)));
+    const [isNameFocused, setIsNameFocused] = useState(false);
+    const [isShopFocused, setIsShopFocused] = useState(false);
+
+    const filteredNames = existingNames.filter(n => n.toLowerCase().includes(editName.toLowerCase()));
+    const filteredShops = uniqueShops.filter(s => s.toLowerCase().includes(editShop.toLowerCase()));
 
     if (!item) {
         return (
@@ -376,14 +382,42 @@ export function ProductDetail() {
                 ) : (
                     /* Edit form */
                     <Card className="p-5 space-y-4">
-                        <div className="space-y-1.5">
+                        {/* Name */}
+                        <div className="space-y-1.5 relative">
                             <Label>商品名</Label>
-                            <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-11"/>
+                            <Input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                onFocus={() => setIsNameFocused(true)}
+                                onBlur={() => setTimeout(() => setIsNameFocused(false), 200)}
+                                className="h-11"
+                                autoComplete="off"
+                            />
+                            {isNameFocused && filteredNames.length > 0 && (
+                                <ul className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                    {filteredNames.map((n) => (
+                                        <li
+                                            key={n}
+                                            className="px-3 py-2.5 text-sm hover:bg-muted cursor-pointer border-b border-border/50 last:border-0"
+                                            onClick={() => {
+                                                setEditName(n);
+                                                setIsNameFocused(false);
+                                            }}
+                                        >
+                                            {n}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
+
+                        {/* Brand */}
                         <div className="space-y-1.5">
                             <Label>ブランド</Label>
                             <Input value={editBrand} onChange={(e) => setEditBrand(e.target.value)} className="h-11"/>
                         </div>
+
+                        {/* Category */}
                         <div className="space-y-1.5">
                             <Label>カテゴリ</Label>
                             <div className="flex flex-wrap gap-2">
@@ -404,24 +438,38 @@ export function ProductDetail() {
                             </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        {/* Shop */}
+                        <div className="space-y-1.5 relative">
                             <Label htmlFor="shop" className="flex items-center gap-1">
                                 <Store className="w-3.5 h-3.5 text-muted-foreground" />
                                 買った場所（お店）
                             </Label>
                             <Input
                                 id="shop"
-                                list="shop-list-detail"
                                 value={editShop}
                                 onChange={(e) => setEditShop(e.target.value)}
+                                onFocus={() => setIsShopFocused(true)}
+                                onBlur={() => setTimeout(() => setIsShopFocused(false), 200)}
                                 placeholder="例：マツモトキヨシ"
                                 className="h-11"
+                                autoComplete="off"
                             />
-                            <datalist id="shop-list-detail">
-                                {uniqueShops.map((s) => (
-                                    <option key={s} value={s} />
-                                ))}
-                            </datalist>
+                            {isShopFocused && filteredShops.length > 0 && (
+                                <ul className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                                    {filteredShops.map((s) => (
+                                        <li
+                                            key={s}
+                                            className="px-3 py-2.5 text-sm hover:bg-muted cursor-pointer border-b border-border/50 last:border-0"
+                                            onClick={() => {
+                                                setEditShop(s);
+                                                setIsShopFocused(false);
+                                            }}
+                                        >
+                                            {s}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
 
                         {item.type === 'count' ? (

@@ -36,6 +36,12 @@ export function AddProduct() {
   const [contentAmount, setContentAmount] = useState<string>("");
   const [contentUnit, setContentUnit] = useState<ContentUnit>("pcs");
   const [isLookingUpBarcode, setIsLookingUpBarcode] = useState(false);
+  const existingNames = Array.from(new Set(items.map(item => item.name)));
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isShopFocused, setIsShopFocused] = useState(false);
+
+  const filteredNames = existingNames.filter(n => n.toLowerCase().includes(name.toLowerCase()));
+  const filteredShops = uniqueShops.filter(s => s.toLowerCase().includes(shop.toLowerCase()));
 
   const applySuggestionToForm = (s: {
     name?: string;
@@ -174,7 +180,7 @@ export function AddProduct() {
           )}
 
           {/* Name */}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 relative"> {/* 👈 relative を追加 */}
             <Label htmlFor="name">
               商品名 <span className="text-red-500">*</span>
             </Label>
@@ -182,10 +188,30 @@ export function AddProduct() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onFocus={() => setIsNameFocused(true)}
+                onBlur={() => setTimeout(() => setIsNameFocused(false), 200)}
                 placeholder="例：ティッシュペーパー"
                 className="h-11"
+                autoComplete="off" // 👈 OSのサジェストを無効化
                 autoFocus
             />
+            {/* 独自ドロップダウン */}
+            {isNameFocused && filteredNames.length > 0 && (
+                <ul className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                  {filteredNames.map((n) => (
+                      <li
+                          key={n}
+                          className="px-3 py-2.5 text-sm hover:bg-muted cursor-pointer border-b border-border/50 last:border-0"
+                          onClick={() => {
+                            setName(n);
+                            setIsNameFocused(false);
+                          }}
+                      >
+                        {n}
+                      </li>
+                  ))}
+                </ul>
+            )}
           </div>
 
           {/* Brand */}
@@ -200,25 +226,39 @@ export function AddProduct() {
             />
           </div>
 
-          <div className="space-y-1.5">
+          {/* Shop */}
+          <div className="space-y-1.5 relative"> {/* 👈 relative を追加 */}
             <Label htmlFor="shop" className="flex items-center gap-1">
               <Store className="w-3.5 h-3.5 text-muted-foreground" />
               買った場所（お店）
             </Label>
             <Input
                 id="shop"
-                list="shop-list"
                 value={shop}
                 onChange={(e) => setShop(e.target.value)}
+                onFocus={() => setIsShopFocused(true)}
+                onBlur={() => setTimeout(() => setIsShopFocused(false), 200)}
                 placeholder="例：マツモトキヨシ"
                 className="h-11"
+                autoComplete="off"
             />
-            {/* datalist を使って過去の履歴からサジェストを表示 */}
-            <datalist id="shop-list">
-              {uniqueShops.map((s) => (
-                  <option key={s} value={s} />
-              ))}
-            </datalist>
+            {/* 独自ドロップダウン */}
+            {isShopFocused && filteredShops.length > 0 && (
+                <ul className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
+                  {filteredShops.map((s) => (
+                      <li
+                          key={s}
+                          className="px-3 py-2.5 text-sm hover:bg-muted cursor-pointer border-b border-border/50 last:border-0"
+                          onClick={() => {
+                            setShop(s);
+                            setIsShopFocused(false);
+                          }}
+                      >
+                        {s}
+                      </li>
+                  ))}
+                </ul>
+            )}
           </div>
 
           {/* Type selection */}
