@@ -5,14 +5,6 @@ import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog';
 
-// ============================================================================
-// 🛠️ デバッグモードの切り替えフラグ
-// true  : カメラを起動せず、PCでのテスト用に「手動入力フォーム」を表示します。
-// false : 本番環境用。通常通りスマホのカメラを起動します。
-//
-// 💡 豆知識: `const DEBUG_MODE = import.meta.env.DEV;` と書くと、
-// ローカル開発(npm run dev)の時だけ自動でtrueになり、手動切り替えすら不要になります。
-// ============================================================================
 // @ts-ignore
 const DEBUG_MODE = import.meta.env.DEV;
 
@@ -27,24 +19,41 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // デバッグ（手動入力）用の状態
+  // 🌟 対策3: 二重読み取り防止用のロックフラグ
+  const isScannedRef = useRef(false);
+
+  // 🌟 対策1: 親から渡された関数が毎回変わっても useEffect を再実行させないためのテクニック
+  const onScanRef = useRef(onScan);
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onCloseRef.current = onClose;
+  }, [onScan, onClose]);
+
   const [manualInput, setManualInput] = useState("");
 
   useEffect(() => {
     if (!open) return;
-
-    // 🛑 デバッグモード時はカメラの初期化処理を完全にスキップする
     if (DEBUG_MODE) return;
+
+    // 開くたびにロックを解除
+    isScannedRef.current = false;
 
     let intervalId: number | null = null;
     let cancelled = false;
 
     const startScanner = async () => {
-      const checkElement = setInterval(async () => {
+      // 🌟 対策2: intervalId にしっかり代入し、クリーンアップできるように修正
+      intervalId = window.setInterval(async () => {
         const element = document.getElementById('barcode-reader');
         if (element) {
-          clearInterval(checkElement);
+          if (intervalId) window.clearInterval(intervalId);
+          if (cancelled) return;
+
           try {
+            // 安全のため、既に中身（videoタグ）があれば空にする
+            element.innerHTML = '';
+
             const scanner = new Html5Qrcode('barcode-reader');
             scannerRef.current = scanner;
 
@@ -52,6 +61,10 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
                 { facingMode: 'environment' },
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 async (text) => {
+                  // 🌟 対策3: 既に読み取り処理が始まっていたら、2回目以降の検知は完全に無視する
+                  if (isScannedRef.current) return;
+                  isScannedRef.current = true;
+
                   try {
                     if (scannerRef.current?.isScanning) {
                       await scannerRef.current.stop();
@@ -60,14 +73,14 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
                   setScanning(false);
 
                   const code = String(text).trim();
-                  if (code) onScan(code);
-                  onClose();
+                  if (code) onScanRef.current(code);
+                  onCloseRef.current();
                 },
                 (_) => { /* スキャン中... */ }
             );
-            setScanning(true);
+            if (!cancelled) setScanning(true);
           } catch (err) {
-            setError('カメラへのアクセスを許可してください。');
+            if (!cancelled) setError('カメラへのアクセスを許可してください。');
           }
         }
       }, 100);
@@ -87,21 +100,21 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
       }
       setScanning(false);
     };
-  }, [open, onClose, onScan]);
+  }, [open]); // 👈 依存配列から onScan と onClose を外したことで、不要な再実行をストップ
 
   const handleClose = () => {
+    isScannedRef.current = true; // 閉じる時も念のためロック
     if (scannerRef.current?.isScanning) {
       scannerRef.current.stop().catch(console.error);
     }
     onClose();
   };
 
-  // デバッグ用：手動入力の送信処理
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const code = manualInput.trim();
     if (code) {
-      onScan(code); // スキャン成功時と同じ処理を呼ぶ
+      onScan(code);
       onClose();
     }
   };
@@ -118,7 +131,6 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
 
           <div className="space-y-4">
             {DEBUG_MODE ? (
-                /* 🔵 デバッグモード用のUI */
                 <div className="py-2 space-y-4">
                   <div className="p-3 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs flex items-center gap-2">
                     <Bug className="w-4 h-4 shrink-0" />
@@ -139,10 +151,8 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
                   </form>
                 </div>
             ) : error ? (
-                /* 🔴 カメラエラー時のUI */
                 <div className="p-4 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>
             ) : (
-                /* 🟢 通常のカメラUI */
                 <>
                   <div id="barcode-reader" className="w-full rounded-lg overflow-hidden bg-black/5" />
                   <p className="text-xs text-muted-foreground text-center">
