@@ -1,81 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { X, Download, Share, PlusSquare, MoreHorizontal } from "lucide-react";
+import React from "react";
+import { X, Download, Share, PlusSquare, MoreHorizontal, Copy } from "lucide-react";
 import { Button } from "@/presentation/components/ui/Button";
 import { Card } from "@/presentation/components/ui/Card";
-
-interface BeforeInstallPromptEvent extends Event {
-    readonly platforms: Array<string>;
-    readonly userChoice: Promise<{
-        outcome: "accepted" | "dismissed";
-        platform: string;
-    }>;
-    prompt(): Promise<void>;
-}
-
-const DISMISS_KEY = "install_prompt_dismissed";
-
-type PromptType = "ios-safari" | "ios-chrome" | "android" | null;
+import { useInstallPrompt } from "@/presentation/hooks/useInstallPrompt";
 
 export function InstallPrompt() {
-    const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-    const [promptType, setPromptType] = useState<PromptType>(null);
-    const [showPrompt, setShowPrompt] = useState(false);
-
-    useEffect(() => {
-        // 1. スタンドアロン（アプリとして起動中）なら何もしない
-        const isStandalone =
-            window.matchMedia("(display-mode: standalone)").matches ||
-            ("standalone" in window.navigator && (window.navigator as any).standalone);
-        if (isStandalone) return;
-
-        // 2. 過去に閉じていれば何もしない
-        if (localStorage.getItem(DISMISS_KEY)) return;
-
-        const ua = window.navigator.userAgent.toLowerCase();
-
-        // 3. 完璧なiOS判定（iPadがMacのフリをしているケースもカバー）
-        const isIOSDevice =
-            /iphone|ipad|ipod/.test(ua) ||
-            (ua.includes("mac") && "ontouchend" in document);
-
-        if (isIOSDevice) {
-            // iOS Chrome か iOS Safari かを判定
-            if (ua.includes("crios")) {
-                setPromptType("ios-chrome");
-            } else {
-                setPromptType("ios-safari");
-            }
-            setShowPrompt(true);
-            return; // iOSの場合はここで処理終了（以下のイベントは待たない）
-        }
-
-        // 4. Android/PC用：ブラウザがPWAとして認めた時のみ発火
-        const handleBeforeInstallPrompt = (e: Event) => {
-            e.preventDefault();
-            setDeferredPrompt(e as BeforeInstallPromptEvent);
-            setPromptType("android");
-            setShowPrompt(true);
-        };
-
-        window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-        return () => {
-            window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-        };
-    }, []);
-
-    const handleInstallClick = async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === "accepted") setShowPrompt(false);
-        setDeferredPrompt(null);
-    };
-
-    const handleDismiss = () => {
-        setShowPrompt(false);
-        localStorage.setItem(DISMISS_KEY, "true");
-    };
+    const { showPrompt, promptType, handlers } = useInstallPrompt();
 
     if (!showPrompt || !promptType) return null;
 
@@ -84,7 +14,7 @@ export function InstallPrompt() {
             <div className="max-w-lg mx-auto">
                 <Card className="p-4 shadow-lg border-primary/20 bg-background/95 backdrop-blur-sm relative">
                     <button
-                        onClick={handleDismiss}
+                        onClick={handlers.handleDismiss}
                         className="absolute top-2 right-2 p-1 text-muted-foreground hover:bg-muted rounded-full transition-colors"
                     >
                         <X className="w-4 h-4" />
@@ -98,7 +28,35 @@ export function InstallPrompt() {
                         </div>
 
                         <div className="flex-1 pr-4">
-                            <h3 className="font-semibold text-sm mb-1">アプリをホーム画面に追加</h3>
+                            <h3 className="font-semibold text-sm mb-1">
+                                {promptType === "in-app-browser" ? "インストールするには" : "アプリをホーム画面に追加"}
+                            </h3>
+
+                            {/* 🌟 アプリ内ブラウザ向けの案内 */}
+                            {promptType === "in-app-browser" && (
+                                <div className="text-xs text-muted-foreground space-y-2 mt-2">
+                                    <div className="p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 rounded-md font-medium text-[10px] mb-2 leading-tight">
+                                        ⚠️ 現在アプリ内ブラウザで表示されています。<br/>インストールするには標準ブラウザで開き直してください。
+                                    </div>
+                                    <p className="flex text-left gap-1.5">
+                                        <span className="shrink-0 font-bold">【iPhone】</span>
+                                        <span>右下（または右上）のボタンから<br/><strong className="text-foreground">「Safariで開く」</strong>を選択</span>
+                                    </p>
+                                    <p className="flex text-left gap-1.5">
+                                        <span className="shrink-0 font-bold">【Android】</span>
+                                        <span>右上の「︙」から<br/><strong className="text-foreground">「ブラウザで開く」</strong>を選択</span>
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full mt-3 text-xs bg-white"
+                                        onClick={handlers.handleCopyUrl}
+                                    >
+                                        <Copy className="w-4 h-4 mr-2" />
+                                        URLをコピーする
+                                    </Button>
+                                </div>
+                            )}
 
                             {/* iOS Safari 向けの案内 */}
                             {promptType === "ios-safari" && (
@@ -150,7 +108,7 @@ export function InstallPrompt() {
                                     <p className="text-xs text-muted-foreground mb-3 mt-1">
                                         インストールすると、オフラインでもサクサク使えるようになります。
                                     </p>
-                                    <Button size="sm" onClick={handleInstallClick} className="w-full text-xs">
+                                    <Button size="sm" onClick={handlers.handleInstallClick} className="w-full text-xs">
                                         アプリをインストール
                                     </Button>
                                 </>
