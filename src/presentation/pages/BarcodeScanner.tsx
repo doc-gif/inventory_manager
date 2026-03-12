@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, Camera, Search, Bug } from 'lucide-react';
+import { X, Camera, Search, Bug, Info } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog';
@@ -63,7 +63,7 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
                   if (code) onScan(code);
                   onClose();
                 },
-                (msg) => { /* スキャン中... */ }
+                (_) => { /* スキャン中... */ }
             );
             setScanning(true);
           } catch (err) {
@@ -155,6 +155,13 @@ export function BarcodeScanner({ open, onClose, onScan }: BarcodeScannerProps) {
                   )}
                 </>
             )}
+
+            <div className="flex items-start gap-2 p-3 bg-muted/40 rounded-lg border border-border/50 text-muted-foreground mt-2">
+              <Info className="w-4 h-4 shrink-0 mt-0.5" />
+              <p className="text-[10px] leading-relaxed">
+                読み取ったバーコードと商品名は、全ユーザーの検索を速くするための匿名の<strong className="text-foreground font-medium">「共有商品辞書」</strong>として蓄積されます。個人の在庫や「誰がいつスキャンしたか」が特定されることはありません。
+              </p>
+            </div>
 
             <Button variant="outline" onClick={handleClose} className="w-full mt-2">
               <X className="w-4 h-4 mr-2" />
