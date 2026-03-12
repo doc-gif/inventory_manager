@@ -1,210 +1,81 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import React from 'react';
 import { ArrowLeft, Package, Droplets, ScanBarcode, Layers, Store, Info } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Label } from '@/presentation/components/ui/Label';
 import { Card } from '@/presentation/components/ui/Card';
-import { type Category, type ContentUnit, type ItemType} from '@/domain/models/inventory-management-types';
-import { toast } from 'sonner';
+import { type ContentUnit } from '@/domain/models/inventory-management-types';
 import { BarcodeScanner } from '@/presentation/pages/BarcodeScanner';
-import {useInventoryStore} from "@/application/stores/useInventoryStore";
-import {lookupBarcodeForAddProduct} from "@/application/use-cases/BarcodeLookupService";
+import { useAddProduct } from '@/presentation/hooks/useAddProduct';
 
 export function AddProduct() {
-  const navigate = useNavigate();
-  const { addItem, items, getUniqueShops } = useInventoryStore();
-  const uniqueShops = getUniqueShops();
-
-  const [name, setName] = useState('');
-  const [brand, setBrand] = useState('');
-  const [type, setType] = useState<ItemType>('count');
-  const [category, setCategory] = useState<Category>('日用品');
-  const [count, setCount] = useState(1);
-  const [volumeLevel, setVolumeLevel] = useState(5);
-  const [price, setPrice] = useState('');
-  const [purchaseDate, setPurchaseDate] = useState(
-      new Date().toISOString().split('T')[0]
-  );
-  const [shop, setShop] = useState('');
-  const [openedDate, setOpenedDate] = useState('');
-  const [expiryDays, setExpiryDays] = useState('');
-  const [lowThreshold, setLowThreshold] = useState('2');
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [barcode, setBarcode] = useState('');
-  const [showScanner, setShowScanner] = useState(false);
-  const [contentAmount, setContentAmount] = useState<string>("");
-  const [contentUnit, setContentUnit] = useState<ContentUnit>("pcs");
-  const [isLookingUpBarcode, setIsLookingUpBarcode] = useState(false);
-  const existingNames = Array.from(new Set(items.map(item => item.name)));
-  const [isNameFocused, setIsNameFocused] = useState(false);
-  const [isShopFocused, setIsShopFocused] = useState(false);
-
-  const filteredNames = existingNames.filter(n => n.toLowerCase().includes(name.toLowerCase()));
-  const filteredShops = uniqueShops.filter(s => s.toLowerCase().includes(shop.toLowerCase()));
-
-  const applySuggestionToForm = (s: {
-    name?: string;
-    brand?: string;
-    type?: ItemType;
-    category?: Category;
-    contentAmount?: number;
-    contentUnit?: ContentUnit;
-  }) => {
-    if (s.name) setName(s.name);
-    if (s.brand !== undefined) setBrand(s.brand);
-    if (s.type) setType(s.type);
-    if (s.category) setCategory(s.category);
-
-    if (s.contentAmount && s.contentUnit) {
-      setContentAmount(String(s.contentAmount));
-      setContentUnit(s.contentUnit);
-    }
-  };
-
-  const handleBarcodeScanned = async (code: string) => {
-    setBarcode(code);
-
-    setIsLookingUpBarcode(true);
-    try {
-      const result = await lookupBarcodeForAddProduct({ barcode: code, items });
-
-      if (result.kind === "HIT_HISTORY") {
-        applySuggestionToForm(result.suggestion);
-        toast.success(`「${result.suggestion.name ?? "商品"}」の情報を読み込みました`);
-        return;
-      }
-
-      if (result.kind === "HIT_CACHE") {
-        applySuggestionToForm(result.suggestion);
-        toast.success("過去に取得した商品情報を読み込みました。必要に応じて修正して登録してください。");
-        return;
-      }
-
-      if (result.kind === "HIT_REMOTE") {
-        applySuggestionToForm(result.suggestion);
-        toast.success("商品情報を取得しました。必要に応じて修正して登録してください。");
-        return;
-      }
-
-      if (result.kind === "NOT_FOUND") {
-        toast.message("商品情報が見つかりませんでした。バーコードは記録したので手入力してください。");
-        return;
-      }
-
-      toast.message("商品情報の取得に失敗しました。バーコードは記録したので手入力してください。");
-    } finally {
-      setIsLookingUpBarcode(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      toast.error('商品名を入力してください');
-      return;
-    }
-
-    const parsedContentAmount =
-        contentAmount.trim() === "" ? undefined : Number(contentAmount);
-
-    if (parsedContentAmount !== undefined && (!Number.isFinite(parsedContentAmount) || parsedContentAmount <= 0)) {
-      toast.error("内容量は0より大きい数値で入力してください");
-      return;
-    }
-
-    addItem({
-      name: name.trim(),
-      brand: brand.trim(),
-      type,
-      category,
-      count: type === 'count' || type === 'both' ? count : 0,
-      volumeLevel: type === 'volume' || type === 'both' ? volumeLevel : 0,
-      price: price ? parseInt(price) : 0,
-      purchaseDate,
-      shop: shop.trim() || undefined,
-      openedDate: openedDate || null,
-      expiryDays: expiryDays ? parseInt(expiryDays) : null,
-      lowThreshold: isNaN(parseInt(lowThreshold)) ? 2 : parseInt(lowThreshold),
-      barcode: barcode || null,
-      contentAmount: parsedContentAmount,
-      contentUnit: parsedContentAmount ? contentUnit : undefined,
-    });
-
-    toast.success(`「${name}」を追加しました`);
-    navigate('/');
-  };
+  // カスタムフックからすべての状態とロジックを受け取る
+  const { form, setters, ui, uiSetters, dropdowns, handlers } = useAddProduct();
 
   return (
       <div className="pb-24 overflow-x-hidden">
+        {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="p-1">
+            <Button variant="ghost" size="sm" onClick={handlers.goBack} className="p-1">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <h1>商品を追加</h1>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-4 pt-4 space-y-5">
+        <form onSubmit={handlers.handleSubmit} className="px-4 pt-4 space-y-5">
           {/* Barcode Scanner Button */}
           <Button
               type="button"
               variant="outline"
               className="w-full h-12"
-              onClick={() => setShowScanner(true)}
-              disabled={isLookingUpBarcode}
+              onClick={() => uiSetters.setShowScanner(true)}
+              disabled={ui.isLookingUpBarcode}
           >
             <ScanBarcode className="w-5 h-5 mr-2" />
-            {isLookingUpBarcode ? "検索中..." : "バーコードをスキャン"}
+            {ui.isLookingUpBarcode ? "検索中..." : "バーコードをスキャン"}
           </Button>
 
-          {barcode && (
+          {form.barcode && (
               <div className="space-y-2">
                 <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
                   <p className="text-xs text-muted-foreground">スキャンしたバーコード</p>
-                  <p className="text-sm font-mono">{barcode}</p>
+                  <p className="text-sm font-mono">{form.barcode}</p>
                 </div>
-
                 <div className="flex items-start gap-1.5 p-2.5 bg-muted/30 rounded-md border border-border/50 text-muted-foreground">
                   <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <div className="text-[10px] leading-relaxed space-y-0.5">
                     <p className="font-bold text-foreground">違う商品が表示された場合</p>
-                    <p>
-                      バーコードが過去の別商品から使い回されている場合などがあります。
-                      お手数ですが、<span className="text-foreground font-medium underline decoration-muted-foreground/50 underline-offset-2">正しい情報に手動で書き換えて</span>登録してください。
-                    </p>
+                    <p>正しい情報に手動で書き換えて登録してください。</p>
                   </div>
                 </div>
               </div>
           )}
 
           {/* Name */}
-          <div className="space-y-1.5 relative"> {/* 👈 relative を追加 */}
-            <Label htmlFor="name">
-              商品名 <span className="text-red-500">*</span>
-            </Label>
+          <div className="space-y-1.5 relative">
+            <Label htmlFor="name">商品名 <span className="text-red-500">*</span></Label>
             <Input
                 id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onFocus={() => setIsNameFocused(true)}
-                onBlur={() => setTimeout(() => setIsNameFocused(false), 200)}
+                value={form.name}
+                onChange={(e) => setters.setName(e.target.value)}
+                onFocus={() => uiSetters.setIsNameFocused(true)}
+                onBlur={() => setTimeout(() => uiSetters.setIsNameFocused(false), 200)}
                 placeholder="例：ティッシュペーパー"
                 className="h-11"
-                autoComplete="off" // 👈 OSのサジェストを無効化
+                autoComplete="off"
                 autoFocus
             />
-            {/* 独自ドロップダウン */}
-            {isNameFocused && filteredNames.length > 0 && (
+            {ui.isNameFocused && dropdowns.filteredNames.length > 0 && (
                 <ul className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
-                  {filteredNames.map((n) => (
+                  {dropdowns.filteredNames.map((n) => (
                       <li
                           key={n}
                           className="px-3 py-2.5 text-sm hover:bg-muted cursor-pointer border-b border-border/50 last:border-0"
                           onClick={() => {
-                            setName(n);
-                            setIsNameFocused(false);
+                            setters.setName(n);
+                            uiSetters.setIsNameFocused(false);
                           }}
                       >
                         {n}
@@ -219,39 +90,38 @@ export function AddProduct() {
             <Label htmlFor="brand">メーカー・ブランド名</Label>
             <Input
                 id="brand"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
+                value={form.brand}
+                onChange={(e) => setters.setBrand(e.target.value)}
                 placeholder="例：エリエール"
                 className="h-11"
             />
           </div>
 
           {/* Shop */}
-          <div className="space-y-1.5 relative"> {/* 👈 relative を追加 */}
+          <div className="space-y-1.5 relative">
             <Label htmlFor="shop" className="flex items-center gap-1">
               <Store className="w-3.5 h-3.5 text-muted-foreground" />
               買った場所（お店）
             </Label>
             <Input
                 id="shop"
-                value={shop}
-                onChange={(e) => setShop(e.target.value)}
-                onFocus={() => setIsShopFocused(true)}
-                onBlur={() => setTimeout(() => setIsShopFocused(false), 200)}
+                value={form.shop}
+                onChange={(e) => setters.setShop(e.target.value)}
+                onFocus={() => uiSetters.setIsShopFocused(true)}
+                onBlur={() => setTimeout(() => uiSetters.setIsShopFocused(false), 200)}
                 placeholder="例：マツモトキヨシ"
                 className="h-11"
                 autoComplete="off"
             />
-            {/* 独自ドロップダウン */}
-            {isShopFocused && filteredShops.length > 0 && (
+            {ui.isShopFocused && dropdowns.filteredShops.length > 0 && (
                 <ul className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
-                  {filteredShops.map((s) => (
+                  {dropdowns.filteredShops.map((s) => (
                       <li
                           key={s}
                           className="px-3 py-2.5 text-sm hover:bg-muted cursor-pointer border-b border-border/50 last:border-0"
                           onClick={() => {
-                            setShop(s);
-                            setIsShopFocused(false);
+                            setters.setShop(s);
+                            uiSetters.setIsShopFocused(false);
                           }}
                       >
                         {s}
@@ -266,24 +136,24 @@ export function AddProduct() {
             <Label>管理タイプ</Label>
             <div className="grid grid-cols-3 gap-2">
               <Card
-                  className={`p-2 cursor-pointer transition-all text-center ${type === 'count' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
-                  onClick={() => setType('count')}
+                  className={`p-2 cursor-pointer transition-all text-center ${form.type === 'count' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
+                  onClick={() => setters.setType('count')}
               >
                 <Package className="w-6 h-6 mx-auto mb-1 text-primary" />
                 <p className="text-xs font-bold">数量管理</p>
                 <p className="text-[9px] text-muted-foreground mt-0.5">個数をカウント</p>
               </Card>
               <Card
-                  className={`p-2 cursor-pointer transition-all text-center ${type === 'volume' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
-                  onClick={() => setType('volume')}
+                  className={`p-2 cursor-pointer transition-all text-center ${form.type === 'volume' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
+                  onClick={() => setters.setType('volume')}
               >
                 <Droplets className="w-6 h-6 mx-auto mb-1 text-blue-500" />
                 <p className="text-xs font-bold">残量管理</p>
                 <p className="text-[9px] text-muted-foreground mt-0.5">1本の残量を管理</p>
               </Card>
               <Card
-                  className={`p-2 cursor-pointer transition-all text-center ${type === 'both' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
-                  onClick={() => setType('both')}
+                  className={`p-2 cursor-pointer transition-all text-center ${form.type === 'both' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:border-muted-foreground/30'}`}
+                  onClick={() => setters.setType('both')}
               >
                 <Layers className="w-6 h-6 mx-auto mb-1 text-purple-500" />
                 <p className="text-xs font-bold">ストック＋残量</p>
@@ -292,27 +162,26 @@ export function AddProduct() {
             </div>
           </div>
 
-          {/* Count or Volume: type='both' の時のUIを大幅改善 */}
-          {type === 'count' ? (
+          {/* Count or Volume Inputs */}
+          {form.type === 'count' ? (
               <div className="space-y-1.5">
-                <Label htmlFor="count">在庫数</Label>
+                <Label>在庫数</Label>
                 <div className="flex items-center gap-3">
-                  <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(Math.max(0, count - 1))}>−</Button>
-                  <span className="text-2xl w-12 text-center tabular-nums">{count}</span>
-                  <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(count + 1)}>＋</Button>
+                  <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setters.setCount(Math.max(0, form.count - 1))}>−</Button>
+                  <span className="text-2xl w-12 text-center tabular-nums">{form.count}</span>
+                  <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setters.setCount(form.count + 1)}>＋</Button>
                 </div>
               </div>
-          ) : type === 'volume' ? (
+          ) : form.type === 'volume' ? (
               <div className="space-y-1.5">
                 <Label>現在の残量</Label>
                 <div className="flex items-end gap-2 py-2">
                   {[1, 2, 3, 4, 5].map((i) => (
-                      <button key={i} type="button" onClick={() => setVolumeLevel(i)} className={`w-full max-w-[40px] rounded transition-all ${i <= volumeLevel ? (volumeLevel <= 1 ? 'bg-red-500' : volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 8 + 12}px` }} />
+                      <button key={i} type="button" onClick={() => setters.setVolumeLevel(i)} className={`w-full max-w-[40px] rounded transition-all ${i <= form.volumeLevel ? (form.volumeLevel <= 1 ? 'bg-red-500' : form.volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 8 + 12}px` }} />
                   ))}
                 </div>
               </div>
           ) : (
-              /* 【改善】 ストック＋残量タイプの入力 */
               <div className="space-y-6 bg-muted/20 p-4 rounded-xl border border-border">
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-blue-600">
@@ -320,22 +189,19 @@ export function AddProduct() {
                   </Label>
                   <div className="flex items-end gap-2 py-1">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <button key={i} type="button" onClick={() => setVolumeLevel(i)} className={`w-full max-w-[40px] rounded transition-all ${i <= volumeLevel ? (volumeLevel <= 1 ? 'bg-red-500' : volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 6 + 10}px` }} />
+                        <button key={i} type="button" onClick={() => setters.setVolumeLevel(i)} className={`w-full max-w-[40px] rounded transition-all ${i <= form.volumeLevel ? (form.volumeLevel <= 1 ? 'bg-red-500' : form.volumeLevel <= 3 ? 'bg-yellow-400' : 'bg-emerald-500') : 'bg-gray-200'}`} style={{ height: `${i * 6 + 10}px` }} />
                     ))}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">今使っているボトルの残量を設定します</p>
                 </div>
-
                 <div className="space-y-2 pt-4 border-t border-border/50">
                   <Label className="flex items-center gap-2 text-primary">
                     <Package className="w-4 h-4" /> 未開封のストック数
                   </Label>
                   <div className="flex items-center gap-3">
-                    <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(Math.max(0, count - 1))}>−</Button>
-                    <span className="text-2xl w-12 text-center tabular-nums">{count}</span>
-                    <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setCount(count + 1)}>＋</Button>
+                    <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setters.setCount(Math.max(0, form.count - 1))}>−</Button>
+                    <span className="text-2xl w-12 text-center tabular-nums">{form.count}</span>
+                    <Button type="button" variant="outline" size="sm" className="h-10 w-10 rounded-full p-0" onClick={() => setters.setCount(form.count + 1)}>＋</Button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground">棚に眠っている新品の数を設定します</p>
                 </div>
               </div>
           )}
@@ -347,8 +213,8 @@ export function AddProduct() {
               <Input
                   id="price"
                   type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  value={form.price}
+                  onChange={(e) => setters.setPrice(e.target.value)}
                   placeholder="298"
                   className="h-11"
               />
@@ -358,27 +224,27 @@ export function AddProduct() {
               <Input
                   id="purchaseDate"
                   type="date"
-                  value={purchaseDate}
-                  onChange={(e) => setPurchaseDate(e.target.value)}
+                  value={form.purchaseDate}
+                  onChange={(e) => setters.setPurchaseDate(e.target.value)}
                   className="h-11"
               />
             </div>
           </div>
 
-          {/* 内容量（新規） */}
+          {/* Content Amount */}
           <div className="space-y-1.5">
             <Label>内容量</Label>
             <div className="grid grid-cols-3 gap-2">
               <Input
                   inputMode="decimal"
                   placeholder="例: 300"
-                  value={contentAmount}
-                  onChange={(e) => setContentAmount(e.target.value)}
+                  value={form.contentAmount}
+                  onChange={(e) => setters.setContentAmount(e.target.value)}
                   className="h-11 col-span-2"
               />
               <select
-                  value={contentUnit}
-                  onChange={(e) => setContentUnit(e.target.value as ContentUnit)}
+                  value={form.contentUnit}
+                  onChange={(e) => setters.setContentUnit(e.target.value as ContentUnit)}
                   className="h-11 rounded-md border bg-input-background px-3 text-sm"
               >
                 <option value="pcs">本</option>
@@ -386,79 +252,65 @@ export function AddProduct() {
                 <option value="g">g</option>
               </select>
             </div>
-            <p className="text-[10px] text-muted-foreground">
-              例）フロスピック：100本 / 化粧水：200ml / 歯磨き粉：120g
-            </p>
           </div>
 
-          {/* Advanced options toggle */}
+          {/* Advanced Options Toggle */}
           <button
               type="button"
               className="text-xs text-primary underline"
-              onClick={() => setShowAdvanced(!showAdvanced)}
+              onClick={() => uiSetters.setShowAdvanced(!ui.showAdvanced)}
           >
-            {showAdvanced ? '詳細設定を閉じる' : '開封日・使用期限などの詳細設定 ▼'}
+            {ui.showAdvanced ? '詳細設定を閉じる' : '開封日・使用期限などの詳細設定 ▼'}
           </button>
 
-          {showAdvanced && (
+          {ui.showAdvanced && (
               <div className="space-y-4 bg-muted/30 rounded-lg p-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="openedDate">開封日</Label>
                   <Input
                       id="openedDate"
                       type="date"
-                      value={openedDate}
-                      onChange={(e) => setOpenedDate(e.target.value)}
+                      value={form.openedDate}
+                      onChange={(e) => setters.setOpenedDate(e.target.value)}
                       className="h-11"
                   />
-                  <p className="text-[10px] text-muted-foreground">
-                    コンタクトレンズや化粧品などの開封日を記録します
-                  </p>
                 </div>
-
                 <div className="space-y-1.5">
                   <Label htmlFor="expiryDays">開封後の使用期限（日数）</Label>
                   <Input
                       id="expiryDays"
                       type="number"
-                      value={expiryDays}
-                      onChange={(e) => setExpiryDays(e.target.value)}
-                      placeholder="例：30（30日間）"
+                      value={form.expiryDays}
+                      onChange={(e) => setters.setExpiryDays(e.target.value)}
+                      placeholder="例：30"
                       className="h-11"
                   />
                 </div>
-
-                {(type === 'count' || type === 'both') && (
+                {(form.type === 'count' || form.type === 'both') && (
                     <div className="space-y-1.5">
-                      <Label htmlFor="lowThreshold">
-                        在庫アラートのしきい値
-                      </Label>
+                      <Label htmlFor="lowThreshold">在庫アラートのしきい値</Label>
                       <Input
                           id="lowThreshold"
                           type="number"
-                          value={lowThreshold}
-                          onChange={(e) => setLowThreshold(e.target.value)}
+                          value={form.lowThreshold}
+                          onChange={(e) => setters.setLowThreshold(e.target.value)}
                           placeholder="2"
                           className="h-11"
                       />
-                      <p className="text-[10px] text-muted-foreground">
-                        この数量以下になると「在庫少」として強調表示されます
-                      </p>
                     </div>
                 )}
               </div>
           )}
 
-          {/* Submit */}
           <Button type="submit" className="w-full h-12 rounded-full">
             商品を登録する
           </Button>
         </form>
 
         <BarcodeScanner
-            open={showScanner}
-            onScan={handleBarcodeScanned}
-            onClose={() => setShowScanner(false)}
+            open={ui.showScanner}
+            onScan={handlers.handleBarcodeScanned}
+            onClose={() => uiSetters.setShowScanner(false)}
         />
       </div>
   );
