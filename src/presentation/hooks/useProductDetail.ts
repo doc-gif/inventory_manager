@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
-import { type Category, type ContentUnit } from '@/domain/models/inventory-management-types';
+import {type Category, type ContentUnit, ItemType} from '@/domain/models/inventory-management-types';
 import { useInventoryStore } from '@/application/stores/useInventoryStore';
 import { formatContent, getUnitPrice } from '@/domain/services/pricing';
 
@@ -33,6 +33,7 @@ export function useProductDetail() {
     // ==========================================
     const [editName, setEditName] = useState('');
     const [editBrand, setEditBrand] = useState('');
+    const [editType, setEditType] = useState<ItemType>('count');
     const [editCount, setEditCount] = useState(0);
     const [editVolumeLevel, setEditVolumeLevel] = useState(5);
     const [editPrice, setEditPrice] = useState('');
@@ -68,6 +69,7 @@ export function useProductDetail() {
         if (!item) return;
         setEditName(item.name);
         setEditBrand(item.brand);
+        setEditType(item.type);
         setEditCount(item.count);
         setEditVolumeLevel(item.volumeLevel);
         setEditPrice(item.price > 0 ? String(item.price) : '');
@@ -97,6 +99,7 @@ export function useProductDetail() {
         updateItem(item.id, {
             name: editName.trim(),
             brand: editBrand.trim(),
+            type: editType,
             count: editCount,
             volumeLevel: editVolumeLevel,
             price: editPrice ? parseInt(editPrice) : 0,
@@ -169,11 +172,11 @@ export function useProductDetail() {
             setEditing, setShowDeleteConfirm, setIsNameFocused, setIsShopFocused
         },
         editForm: {
-            editName, editBrand, editCount, editVolumeLevel, editPrice, editCategory,
+            editName, editBrand, editType, editCount, editVolumeLevel, editPrice, editCategory,
             editOpenedDate, editExpiryDays, editLowThreshold, editContentAmount, editContentUnit, editShop
         },
         editSetters: {
-            setEditName, setEditBrand, setEditCount, setEditVolumeLevel, setEditPrice, setEditCategory,
+            setEditName, setEditBrand, setEditType, setEditCount, setEditVolumeLevel, setEditPrice, setEditCategory,
             setEditOpenedDate, setEditExpiryDays, setEditLowThreshold, setEditContentAmount, setEditContentUnit, setEditShop
         },
         dropdowns: {
