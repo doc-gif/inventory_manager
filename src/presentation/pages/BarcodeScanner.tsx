@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-// 🌟 改善：Edit3（ペンアイコン）を追加
-import { X, Camera, Search, Bug, Info, Edit3 } from 'lucide-react';
+import { Camera, Search, Bug, Info, Edit3 } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/Button';
 import { Input } from '@/presentation/components/ui/Input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog';
