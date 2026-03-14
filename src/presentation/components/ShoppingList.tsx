@@ -154,8 +154,17 @@ export function ShoppingList() {
                                                 </div>
                                             </div>
 
-                                            {/* 🌟 改善: タップできることが一目でわかる「補充」ボタン風のUIを配置 */}
-                                            <div className="shrink-0 pl-2">
+                                            {/* 価格と補充ボタンをまとめた右側エリア */}
+                                            <div className="flex items-center gap-3 shrink-0 pl-2">
+                                                {/* 🌟 改善: 前回購入価格を表示 */}
+                                                {item.price > 0 && (
+                                                    <div className="text-right flex flex-col items-end justify-center">
+                                                        <span className="text-[10px] text-muted-foreground block font-medium leading-tight">前回購入</span>
+                                                        <span className="text-sm font-bold text-foreground">¥{item.price.toLocaleString()}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* 補充ボタン（開閉トグル） */}
                                                 <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
                                                     isExpanded
                                                         ? 'bg-muted/50 text-muted-foreground'

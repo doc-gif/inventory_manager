@@ -23,16 +23,15 @@ export function InventoryCard({ item }: Props) {
   const isExpiringSoon = useInventoryStore((s) => s.isExpiringSoon);
   const isExpired = useInventoryStore((s) => s.isExpired);
   const getDaysUntilExpiry = useInventoryStore((s) => s.getDaysUntilExpiry);
-  const getLowestPrice = useInventoryStore((s) => s.getLowestPrice);
 
   const lowStock = isLowStock(item);
   const expiringSoon = isExpiringSoon(item);
   const expired = isExpired(item);
   const daysLeft = getDaysUntilExpiry(item);
-  const lowestPrice = getLowestPrice(item.name);
 
   const unitPrice = getUnitPrice(item);
 
+  // カテゴリごとの絵文字
   const getCategoryEmoji = (category: string) => {
     const map: Record<string, string> = {
       "日用品": "🏠",
@@ -68,7 +67,6 @@ export function InventoryCard({ item }: Props) {
               </h3>
             </div>
 
-            {/* 👇 情報メタデータ: 縦幅を圧縮し、横並び（flex-wrap）で右側の余白を埋める */}
             <div className="pl-7 mt-1.5 flex flex-col gap-1.5">
 
               {/* 1行目: ブランドとバッジ類をまとめる */}
@@ -100,7 +98,6 @@ export function InventoryCard({ item }: Props) {
               {/* 2行目: お店・内容量・価格情報を整理して表示 */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground mt-1">
 
-                {/* 1. お店情報 */}
                 {item.shop && (
                     <div className="flex items-center gap-1 text-primary/80 font-medium">
                       <Store className="w-3 h-3" />
@@ -108,22 +105,20 @@ export function InventoryCard({ item }: Props) {
                     </div>
                 )}
 
-                {/* 👇 2. 新規追加: 内容量表示 */}
                 {item.contentAmount && item.contentUnit && (
                     <div className="flex items-center gap-1 font-medium bg-muted/30 px-1.5 py-0.5 rounded text-foreground/70">
                       {item.contentAmount}{item.contentUnit}
                     </div>
                 )}
 
-                {/* 3. 価格・コスパ情報（底値と単位価格を明確に分ける） */}
-                {lowestPrice !== null && item.price > 0 && (
+                {/* 🌟 改善: 底値を廃止し、前回購入価格を表示 */}
+                {item.price > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <div className="flex items-center gap-1 text-foreground">
-                        <Tag className="w-3 h-3 text-emerald-600" />
-                        底値 ¥{lowestPrice.toLocaleString()}
+                      <div className="flex items-center gap-1 text-foreground font-medium">
+                        <Tag className="w-3 h-3 text-muted-foreground" />
+                        前回 ¥{item.price.toLocaleString()}
                       </div>
 
-                      {/* 単位価格は「（100gあたり〜）」のように括弧でくくってサブ情報化する */}
                       {unitPrice && (
                           <span className="text-[10px] text-muted-foreground/70">
                             ({unitPrice.label})
@@ -135,12 +130,10 @@ export function InventoryCard({ item }: Props) {
             </div>
           </div>
 
-          {/* 区切り線 */}
           <div className="w-full h-px bg-border/50" />
 
-          {/* 下部エリア: 操作・状態（変更なし） */}
+          {/* 下部エリア: 操作・状態 */}
           <div className="w-full flex justify-end">
-
             {item.type === "count" ? (
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] text-muted-foreground font-medium">在庫数</span>
@@ -149,7 +142,7 @@ export function InventoryCard({ item }: Props) {
                       <Minus className="w-4 h-4" />
                     </Button>
                     <div className="text-center min-w-[3rem]">
-                      <span className={`text-2xl tabular-nums ${item.count === 0 ? "text-red-500" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
+                      <span className={`text-2xl tabular-nums font-bold ${item.count === 0 ? "text-red-500" : lowStock ? "text-orange-500" : "text-foreground"}`}>{item.count}</span>
                       <span className="text-xs text-muted-foreground ml-0.5">個</span>
                     </div>
                   </div>
@@ -160,10 +153,7 @@ export function InventoryCard({ item }: Props) {
                   <VolumeGauge level={item.volumeLevel} onChange={(lv) => setVolumeLevel(item.id, lv)} compact />
                 </div>
             ) : (
-                /* ストック＋使用中（both）の横並び表示 */
                 <div className="flex items-stretch gap-2 w-full">
-
-                  {/* 使用中エリア */}
                   <div className="flex-1 flex items-center justify-between bg-blue-50/50 p-2 rounded-lg border border-blue-100">
                     <span className="text-[10px] text-blue-600 flex flex-col items-start font-medium">
                       <span className="flex items-center gap-1"><Droplets className="w-3 h-3" /> 使用中</span>
@@ -173,7 +163,6 @@ export function InventoryCard({ item }: Props) {
                     </div>
                   </div>
 
-                  {/* ストックエリア */}
                   <div className="flex-1 flex items-center justify-between bg-muted/30 p-2 rounded-lg border border-border/50">
                     <span className="text-[10px] text-primary flex flex-col items-start font-medium">
                       <span className="flex items-center gap-1"><Package className="w-3 h-3" /> ストック</span>
@@ -186,7 +175,6 @@ export function InventoryCard({ item }: Props) {
                       <span className="text-[10px] text-muted-foreground">個</span>
                     </div>
                   </div>
-
                 </div>
             )}
           </div>
