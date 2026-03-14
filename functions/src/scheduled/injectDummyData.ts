@@ -5,6 +5,7 @@ import axios from "axios";
 import { GoogleGenAI } from "@google/genai";
 import { db } from "../shared/firebase";
 import { productSchema } from "../shared/geminiSchema"; // 👈 作成した共通スキーマ
+import { getGeminiModel } from "../shared/config";
 
 const yahooApiKey = defineSecret("YAHOO_API_KEY");
 const geminiApiKey = defineSecret("GEMINI_API_KEY"); // 👈 Geminiのシークレットを追加
@@ -58,12 +59,14 @@ export const injectDummyData = onSchedule({
 【検索結果データ】
 ${rawContext}`;
 
+                const currentModel = await getGeminiModel();
+
                 const aiResponse = await ai.models.generateContent({
-                    model: "gemini-3-flash",
+                    model: currentModel, // 👈 直書きをやめて、取得した変数を使う
                     contents: prompt,
                     config: {
                         responseMimeType: "application/json",
-                        responseSchema: productSchema, // 共通スキーマを使用
+                        responseSchema: productSchema,
                         temperature: 0.1,
                     }
                 });

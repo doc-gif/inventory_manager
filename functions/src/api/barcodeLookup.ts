@@ -6,6 +6,7 @@ import axios from "axios";
 import { GoogleGenAI } from "@google/genai";
 import { db } from "../shared/firebase";
 import { productSchema } from "../shared/geminiSchema";
+import { getGeminiModel } from "../shared/config";
 const corsHandler = cors({ origin: true });
 
 // シークレットの定義
@@ -185,13 +186,15 @@ export const barcodeLookup = onRequest(
 【検索結果データ】
 ${rawContext}`;
 
+                        const currentModel = await getGeminiModel();
+
                         const aiResponse = await ai.models.generateContent({
-                            model: "gemini-3-flash",
+                            model: currentModel, // 👈 変数に変更
                             contents: prompt,
                             config: {
                                 responseMimeType: "application/json",
                                 responseSchema: productSchema,
-                                temperature: 0.1, // 創造性より正確性を重視
+                                temperature: 0.1,
                             }
                         });
 
