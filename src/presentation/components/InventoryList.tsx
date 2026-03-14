@@ -1,13 +1,13 @@
 import React from "react";
-import {useNavigate} from "react-router";
-import {Plus, Package, Search, AlertTriangle, Store, ChevronDown} from "lucide-react";
+import { useNavigate } from "react-router";
+import { Plus, Package, Search, AlertTriangle, ChevronDown } from "lucide-react";
 
-import {CATEGORIES} from "@/domain/models/inventory-management-types";
-import {useInventoryStore} from "@/application/stores/useInventoryStore";
+import { CATEGORIES } from "@/domain/models/inventory-management-types";
+import { useInventoryStore } from "@/application/stores/useInventoryStore";
 
-import {Button} from "@/presentation/components/ui/Button";
-import {Input} from "@/presentation/components/ui/Input";
-import {InventoryCard} from "@/presentation/components/InventoryCard";
+import { Button } from "@/presentation/components/ui/Button";
+import { Input } from "@/presentation/components/ui/Input";
+import { InventoryCard } from "@/presentation/components/InventoryCard";
 
 export function InventoryList() {
     const navigate = useNavigate();
@@ -37,119 +37,107 @@ export function InventoryList() {
         return result;
     }, [activeItems, search, selectedCategory, selectedShop, showLowOnly, isLowStock]);
 
-    const lowStockCount = React.useMemo(
-        () => activeItems.filter((item) => isLowStock(item)).length,
-        [activeItems, isLowStock],
-    );
-
     return (
         <div className="pb-24">
+            {/* 🌟 改善: ヘッダー＆フィルター領域の再設計 */}
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-4 pb-3">
-                <div className="flex items-center justify-between mb-3">
+
+                {/* 1. タイトルと追加ボタン */}
+                <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h1 className="flex items-center gap-2">
-                            <Package className="w-6 h-6 text-primary"/>
+                        <h1 className="flex items-center gap-2 font-bold">
+                            <Package className="w-5 h-5 text-primary" />
                             在庫管理
                         </h1>
-                        <p className="text-xs text-muted-foreground mt-0.5">{activeItems.length}件の商品を管理中</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{activeItems.length}件の商品を管理中</p>
                     </div>
-                    <Button onClick={() => navigate("/add")} className="rounded-full gap-1.5" size="sm">
-                        <Plus className="w-4 h-4"/>
+                    <Button onClick={() => navigate("/add")} className="rounded-xl gap-1.5 h-9 px-3 shadow-sm" size="sm">
+                        <Plus className="w-4 h-4" />
                         追加
                     </Button>
                 </div>
 
-                <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-                    <Input
-                        placeholder="商品名・ブランド名で検索..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="pl-9 h-9 rounded-full bg-muted/50"
-                    />
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+                {/* 2. 検索バー ＆ 在庫少トグル */}
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                            placeholder="商品名やブランド名..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="pl-9 h-11 rounded-xl bg-muted/30 border-border/50 text-sm focus:bg-background"
+                        />
+                    </div>
+                    {/* 💡 改善: 「在庫少」を独立したON/OFFのスイッチ（ボタン）として明示 */}
                     <button
                         type="button"
                         onClick={() => setShowLowOnly(!showLowOnly)}
-                        className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors shrink-0 ${
-                            showLowOnly ? "bg-red-500 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        className={`shrink-0 flex items-center justify-center gap-1.5 px-3 h-11 rounded-xl border transition-all duration-200 ${
+                            showLowOnly
+                                ? "bg-red-50 border-red-200 text-red-600 shadow-sm"
+                                : "bg-background border-border/50 text-muted-foreground hover:bg-muted/30"
                         }`}
                     >
-                        <AlertTriangle className="w-3 h-3"/>
-                        在庫少 {lowStockCount > 0 && `(${lowStockCount})`}
+                        <AlertTriangle className={`w-4 h-4 ${showLowOnly ? "text-red-600" : ""}`} />
+                        <span className="text-xs font-bold">在庫少</span>
                     </button>
+                </div>
 
+                {/* 3. カテゴリ ＆ お店ドロップダウン（横並び2分割） */}
+                <div className="flex gap-2">
+                    {/* カテゴリ */}
+                    <div className="relative flex-1">
+                        <select
+                            value={selectedCategory || ""}
+                            onChange={(e) => setSelectedCategory(e.target.value || null)}
+                            className="w-full h-10 appearance-none bg-muted/20 border border-border/50 rounded-xl pl-3 pr-8 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
+                        >
+                            <option value="">カテゴリ: すべて</option>
+                            {CATEGORIES.map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    </div>
+
+                    {/* お店 (登録されたお店がある時だけ表示、ない時はカテゴリが全幅になります) */}
                     {uniqueShops.length > 0 && (
-                        <div className="relative shrink-0 flex items-center">
-                            <Store className="absolute left-2.5 w-3 h-3 pointer-events-none text-muted-foreground" />
+                        <div className="relative flex-1">
                             <select
                                 value={selectedShop || ""}
                                 onChange={(e) => setSelectedShop(e.target.value || null)}
-                                className={`appearance-none pl-7 pr-6 py-1 rounded-full text-xs transition-colors outline-none cursor-pointer border ${
-                                    selectedShop
-                                        ? "bg-primary/10 text-primary border-primary/20 font-medium"
-                                        : "bg-muted text-muted-foreground border-transparent hover:bg-muted/80"
-                                }`}
+                                className="w-full h-10 appearance-none bg-muted/20 border border-border/50 rounded-xl pl-3 pr-8 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors"
                             >
                                 <option value="">お店: すべて</option>
                                 {uniqueShops.map((shop) => (
-                                    <option key={shop} value={shop}>
-                                        {shop}
-                                    </option>
+                                    <option key={shop} value={shop}>{shop}</option>
                                 ))}
                             </select>
-                            <ChevronDown className="absolute right-2 w-3 h-3 pointer-events-none text-muted-foreground" />
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                         </div>
                     )}
-
-                    {/* 縦の区切り線（お店フィルターとカテゴリフィルターの間） */}
-                    <div className="w-px h-4 bg-border shrink-0 mx-0.5" />
-
-                    <button
-                        type="button"
-                        onClick={() => setSelectedCategory(null)}
-                        className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors shrink-0 ${
-                            !selectedCategory ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }`}
-                    >
-                        すべて
-                    </button>
-
-                    {CATEGORIES.map((cat) => (
-                        <button
-                            key={cat}
-                            type="button"
-                            onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
-                            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-colors shrink-0 ${
-                                selectedCategory === cat ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                            }`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
                 </div>
             </div>
 
-            <div className="px-4 pt-3 space-y-2">
+            {/* リスト表示領域 */}
+            <div className="px-4 pt-4 space-y-3">
                 {filteredItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                        <Package className="w-12 h-12 mb-3 opacity-30"/>
+                    <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+                        <Package className="w-12 h-12 mb-4 opacity-20" />
                         {activeItems.length === 0 ? (
-                            <>
-                                <p>まだ商品が登録されていません</p>
-                                <Button variant="outline" className="mt-4 gap-1.5" onClick={() => navigate("/add")}>
-                                    <Plus className="w-4 h-4"/>
-                                    最初の商品を追加
-                                </Button>
-                            </>
+                            <div className="text-center">
+                                <p className="font-medium text-foreground mb-1">まだ商品が登録されていません</p>
+                                <p className="text-xs">右上の「追加」ボタンから登録しましょう</p>
+                            </div>
                         ) : (
-                            <p>条件に一致する商品がありません</p>
+                            <div className="text-center">
+                                <p className="font-medium text-foreground mb-1">見つかりませんでした</p>
+                                <p className="text-xs">検索条件やフィルターを変更してください</p>
+                            </div>
                         )}
                     </div>
                 ) : (
-                    filteredItems.map((item) => <InventoryCard key={item.id} item={item}/>)
+                    filteredItems.map((item) => <InventoryCard key={item.id} item={item} />)
                 )}
             </div>
         </div>
