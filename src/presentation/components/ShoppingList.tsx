@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Store, Copy, Image as ImageIcon, CheckCircle2, Share, Download, Info, AlertTriangle, Plus, PackagePlus } from 'lucide-react';
+import { Store, Copy, Image as ImageIcon, CheckCircle2, Share, Download, Info, AlertTriangle, Plus, Minus, PackagePlus, ChevronDown } from 'lucide-react';
 import { Card } from '@/presentation/components/ui/Card';
 import { Button } from '@/presentation/components/ui/Button';
 import { Badge } from '@/presentation/components/ui/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog';
 import { useShoppingList } from '@/presentation/hooks/useShoppingList';
 
-// 🌟 実際のストアをインポート
 import { useInventoryStore } from '@/application/stores/useInventoryStore';
 
 export function ShoppingList() {
@@ -16,7 +15,6 @@ export function ShoppingList() {
         previewImageUrl,
         shopNames,
         groupedByShop,
-        getLowestPrice,
         handleCopyText,
         handleGeneratePreview,
         handleShare,
@@ -24,19 +22,15 @@ export function ShoppingList() {
         closePreview,
     } = useShoppingList();
 
-    // 🌟 ストアから更新用関数を取得 (※関数名が違う場合は適宜修正してください 例: editItem など)
     const updateItem = useInventoryStore((s) => s.updateItem);
 
     const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
     const [restockCount, setRestockCount] = useState<number>(1);
 
-    // 🌟 実際の在庫追加ロジック
     const handleExecuteRestock = (id: string, currentCount: number) => {
         if (updateItem) {
-            // 現在のストック数(count)に、調整した数(restockCount)を足して保存
             updateItem(id, { count: currentCount + restockCount });
         }
-        // UIを閉じる
         setExpandedItemId(null);
     };
 
@@ -130,81 +124,77 @@ export function ShoppingList() {
                         </h3>
                         <Card className="overflow-hidden bg-white shadow-sm border-border/60">
                             {groupedByShop[shop].map((item, index) => {
-                                const lowestPrice = getLowestPrice(item.name);
                                 const isExpanded = expandedItemId === item.id;
 
                                 return (
-                                    <div key={item.id} className={`flex flex-col p-3.5 ${index !== 0 ? 'border-t border-border/50' : ''}`}>
-
-                                        {/* 1. 常に表示されるメイン行 */}
+                                    <div
+                                        key={item.id}
+                                        className={`flex flex-col p-3.5 cursor-pointer hover:bg-muted/10 transition-colors ${index !== 0 ? 'border-t border-border/50' : ''}`}
+                                        onClick={() => {
+                                            if (isExpanded) {
+                                                setExpandedItemId(null);
+                                            } else {
+                                                setExpandedItemId(item.id);
+                                                setRestockCount(1);
+                                            }
+                                        }}
+                                    >
                                         <div className="flex items-center justify-between">
-                                            <div className="flex flex-col gap-1.5 pr-2 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-sm leading-tight">{item.name}</span>
-                                                    <Badge variant="destructive" className="px-1 py-0 h-4 text-[9px] flex gap-0.5 items-center">
+                                            <div className="flex flex-col gap-1 pr-2 flex-1">
+                                                <span className="font-bold text-sm leading-tight text-foreground">{item.name}</span>
+
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    {item.brand && (
+                                                        <span className="text-xs text-muted-foreground">{item.brand}</span>
+                                                    )}
+                                                    <Badge variant="destructive" className="px-1.5 py-0 h-4 text-[9px] flex gap-0.5 items-center font-normal">
                                                         <AlertTriangle className="w-2.5 h-2.5" />
                                                         在庫少
                                                     </Badge>
                                                 </div>
-                                                {(item.brand || (item.contentAmount && item.contentUnit)) && (
-                                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1.5 line-clamp-1">
-                                                        {item.brand && <span className="bg-muted px-1.5 py-0.5 rounded font-medium">{item.brand}</span>}
-                                                        {item.contentAmount && item.contentUnit && (
-                                                            <span>{item.contentAmount}{item.contentUnit}</span>
-                                                        )}
-                                                    </span>
-                                                )}
                                             </div>
 
-                                            <div className="flex items-center gap-3 shrink-0 pl-2">
-                                                {/* 価格表示 */}
-                                                {lowestPrice !== null && item.price > 0 && (
-                                                    <div className="text-right border-l border-border/50 pl-2">
-                                                        <span className="text-[10px] text-muted-foreground block font-medium">底値目安</span>
-                                                        <span className="text-sm font-bold text-emerald-600">¥{lowestPrice.toLocaleString()}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* 控えめなアフォーダンスボタン（開いていない時だけ表示） */}
-                                                {!isExpanded && (
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-9 px-2.5 text-primary bg-primary/5 hover:bg-primary/10 rounded-lg text-xs font-bold shrink-0 ml-1"
-                                                        onClick={() => {
-                                                            setExpandedItemId(item.id);
-                                                            setRestockCount(1); // 初期値は1個
-                                                        }}
-                                                    >
-                                                        <Plus className="w-3.5 h-3.5 mr-1" />
-                                                        補充
-                                                    </Button>
-                                                )}
+                                            {/* 🌟 改善: タップできることが一目でわかる「補充」ボタン風のUIを配置 */}
+                                            <div className="shrink-0 pl-2">
+                                                <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
+                                                    isExpanded
+                                                        ? 'bg-muted/50 text-muted-foreground'
+                                                        : 'bg-primary/5 text-primary'
+                                                }`}>
+                                                    {isExpanded ? (
+                                                        <ChevronDown className="w-3 h-3 rotate-180" />
+                                                    ) : (
+                                                        <Plus className="w-3 h-3" />
+                                                    )}
+                                                    {isExpanded ? '閉じる' : '補充'}
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* 2. タップした時にパカっと開くインライン展開UI */}
                                         {isExpanded && (
-                                            <div className="mt-3 pt-3 border-t border-border/40 flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-200">
-                                                <div className="flex items-center justify-between bg-muted/20 p-2 rounded-xl border border-border/50">
-                                                    <span className="text-xs font-bold text-foreground pl-2">いくつ買いましたか？</span>
+                                            <div
+                                                className="mt-3 pt-3 border-t border-border/40 flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-200"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <div className="flex items-center justify-between bg-muted/20 p-2.5 rounded-xl border border-border/50">
+                                                    <span className="text-xs font-bold text-foreground pl-2">購入数</span>
                                                     <div className="flex items-center gap-4">
                                                         <Button
                                                             type="button"
                                                             variant="outline"
                                                             className="h-9 w-9 rounded-full p-0 bg-background shadow-sm"
-                                                            onClick={() => setRestockCount(Math.max(1, restockCount - 1))}
+                                                            onClick={(e) => { e.stopPropagation(); setRestockCount(Math.max(1, restockCount - 1)); }}
                                                         >
-                                                            -
+                                                            <Minus className="w-4 h-4" />
                                                         </Button>
                                                         <span className="text-xl tabular-nums font-bold w-6 text-center">{restockCount}</span>
                                                         <Button
                                                             type="button"
                                                             variant="outline"
                                                             className="h-9 w-9 rounded-full p-0 bg-background shadow-sm"
-                                                            onClick={() => setRestockCount(restockCount + 1)}
+                                                            onClick={(e) => { e.stopPropagation(); setRestockCount(restockCount + 1); }}
                                                         >
-                                                            +
+                                                            <Plus className="w-4 h-4" />
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -212,13 +202,13 @@ export function ShoppingList() {
                                                     <Button
                                                         variant="ghost"
                                                         className="flex-1 h-11 text-sm text-muted-foreground"
-                                                        onClick={() => setExpandedItemId(null)}
+                                                        onClick={(e) => { e.stopPropagation(); setExpandedItemId(null); }}
                                                     >
                                                         キャンセル
                                                     </Button>
                                                     <Button
                                                         className="flex-1 h-11 text-sm font-bold shadow-sm"
-                                                        onClick={() => handleExecuteRestock(item.id, item.count)}
+                                                        onClick={(e) => { e.stopPropagation(); handleExecuteRestock(item.id, item.count); }}
                                                     >
                                                         <PackagePlus className="w-4 h-4 mr-1.5" />
                                                         在庫に追加
