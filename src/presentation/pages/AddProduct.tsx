@@ -27,19 +27,42 @@ export function AddProduct() {
         <form onSubmit={handlers.handleSubmit} className="px-4 pt-4 space-y-6">
 
           {/* ==========================================
-              バーコードスキャンセクション
+              バーコードスキャンセクション (コンパクトなボタン型)
           ========================================== */}
           <div className="space-y-4">
+
+            {/* 🌟 改善：全体を大きな「ボタン」としてデザインし直しました */}
             <Button
                 type="button"
                 variant="outline"
-                className="w-full h-12"
+                className="w-full h-auto py-3.5 px-4 flex items-center justify-start gap-3.5 bg-primary/5 border-primary/20 hover:bg-primary/10 hover:border-primary/40 transition-all shadow-sm"
                 onClick={() => uiSetters.setShowScanner(true)}
                 disabled={ui.isLookingUpBarcode}
             >
-              <ScanBarcode className="w-5 h-5 mr-2" />
-              {ui.isLookingUpBarcode ? "検索中..." : "バーコードをスキャン"}
+              <div className="w-10 h-10 shrink-0 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                <ScanBarcode className="w-5 h-5" />
+              </div>
+              <div className="flex-1 text-left">
+                <div className="text-sm font-bold text-foreground">
+                  {ui.isLookingUpBarcode ? "検索中..." : "バーコードで自動入力"}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5 font-normal leading-tight">
+                  カメラで読み取ってAIにお任せ
+                </div>
+              </div>
             </Button>
+
+            {/* 「自動」か「手動」かを分けるセパレーター */}
+            <div className="relative py-1">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-background px-3 text-muted-foreground font-medium">
+                  または 手動で入力
+                </span>
+              </div>
+            </div>
 
             {form.barcode && (
                 <div className="space-y-2">
@@ -74,7 +97,6 @@ export function AddProduct() {
                   placeholder="例：ティッシュペーパー"
                   className="h-11"
                   autoComplete="off"
-                  autoFocus
               />
               {ui.isNameFocused && dropdowns.filteredNames.length > 0 && (
                   <ul className="absolute z-50 w-full bg-background border border-border rounded-md shadow-lg mt-1 max-h-48 overflow-y-auto">
@@ -106,7 +128,7 @@ export function AddProduct() {
               />
             </div>
 
-            {/* Content Amount（基本情報のグループに移動） */}
+            {/* Content Amount */}
             <div className="space-y-1.5 pt-1">
               <Label>内容量</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -198,11 +220,9 @@ export function AddProduct() {
               3. 在庫管理設定
           ========================================== */}
           <div className="space-y-4 pt-5 border-t border-border">
-            {/* 🌟 洗練されたUI：管理タイプの選択 */}
             <div className="space-y-2">
               <Label>管理タイプ</Label>
               <div className="grid grid-cols-2 gap-3">
-                {/* 🌟 数量で管理 (緑色に変更) */}
                 <Card
                     className={`p-3 cursor-pointer transition-all text-center ${
                         form.type === 'count'
@@ -218,7 +238,6 @@ export function AddProduct() {
                   </p>
                 </Card>
 
-                {/* 🅱️ 残量ゲージで管理 (青色) */}
                 <Card
                     className={`p-3 cursor-pointer transition-all text-center ${
                         form.type === 'both'
@@ -236,7 +255,6 @@ export function AddProduct() {
               </div>
             </div>
 
-            {/* 🌟 洗練されたUI：在庫・残量の入力 */}
             {form.type === 'count' ? (
                 <div className="space-y-1.5 p-4 bg-muted/20 rounded-xl border border-border">
                   <Label>現在の在庫数</Label>
@@ -248,7 +266,6 @@ export function AddProduct() {
                 </div>
             ) : (
                 <div className="space-y-6 bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-                  {/* 使用中の残量 */}
                   <div className="space-y-3">
                     <Label className="flex items-center gap-1.5 text-blue-700 font-bold">
                       <Droplets className="w-4 h-4" /> 使用中のボトルの残量
@@ -270,7 +287,6 @@ export function AddProduct() {
                     </div>
                   </div>
 
-                  {/* 未開封ストック */}
                   <div className="space-y-3 pt-5 border-t border-blue-200/50">
                     <Label className="flex items-center gap-1.5 text-slate-700 font-bold">
                       <Package className="w-4 h-4" /> 未開封ストック数
@@ -285,7 +301,6 @@ export function AddProduct() {
                 </div>
             )}
 
-            {/* 🌟 洗練されたUI：在庫アラート設定 */}
             <div className="space-y-2 pt-2">
               <Label className="text-orange-600 font-bold flex items-center gap-1.5">
                 在庫アラート設定
@@ -303,7 +318,6 @@ export function AddProduct() {
                     </p>
                   </div>
 
-                  {/* ＋/− ボタンでの直感的な入力 */}
                   <div className="flex items-center gap-3 shrink-0">
                     <Button
                         type="button"
@@ -327,7 +341,6 @@ export function AddProduct() {
                   </div>
                 </div>
 
-                {/* ストックを持たない人への補足 */}
                 {form.type === 'both' && parseInt(form.lowThreshold || '0') === 0 && (
                     <div className="mt-3 pt-3 border-t border-orange-200/50">
                       <p className="text-[10px] text-orange-600/80 leading-relaxed font-medium">
@@ -343,7 +356,6 @@ export function AddProduct() {
               4. 詳細設定
           ========================================== */}
           <div className="pt-2">
-            {/* Advanced Options Toggle */}
             <button
                 type="button"
                 className="text-xs text-primary underline mb-4 inline-block"
@@ -378,7 +390,7 @@ export function AddProduct() {
                 </div>
             )}
 
-            <Button type="submit" className="w-full h-12 rounded-full mt-2">
+            <Button type="submit" className="w-full h-12 rounded-full mt-2 font-bold">
               商品を登録する
             </Button>
           </div>
