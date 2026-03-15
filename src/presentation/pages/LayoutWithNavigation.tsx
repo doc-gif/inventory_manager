@@ -1,4 +1,3 @@
-// src/presentation/components/LayoutWithNavigation.tsx
 import { Outlet, ScrollRestoration } from "react-router";
 import { Toaster } from "sonner";
 import React from "react";
@@ -11,7 +10,9 @@ export function LayoutPage() {
     useHydrateInventory();
 
     return (
-        <div className="min-h-screen bg-background font-[Noto_Sans_JP,sans-serif] max-w-lg mx-auto relative overflow-x-hidden">
+        // 🌟 改善: overflow-x-hidden を削除しました。
+        // これにより、HomePage などの子コンポーネントに設定されている `sticky`（上部固定）が正しく機能するようになります。
+        <div className="min-h-screen bg-background font-[Noto_Sans_JP,sans-serif] max-w-lg mx-auto relative">
             <ScrollRestoration />
 
             <Outlet />
@@ -21,6 +22,7 @@ export function LayoutPage() {
 
             <Toaster
                 position="bottom-center"
+                offset="80px"
                 toastOptions={{
                     style: {
                         borderRadius: '12px',
