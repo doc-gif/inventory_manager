@@ -12,7 +12,7 @@ export function useProductDetail() {
 
     const {
         items, updateItem, consumeCount, setVolumeLevel,
-        archiveItem, unarchiveItem, deleteItem,
+        deleteItem,
         isLowStock, isExpired, isExpiringSoon,
         getDaysUntilExpiry, getLowestPrice, history, getUniqueShops,
     } = useInventoryStore();
@@ -145,18 +145,6 @@ export function useProductDetail() {
         navigate('/');
     };
 
-    const handleArchive = () => {
-        if (!item) return;
-        if (item.isArchived) {
-            unarchiveItem(item.id);
-            toast.success('アーカイブを解除しました');
-        } else {
-            archiveItem(item.id);
-            toast.success('アーカイブしました');
-            navigate('/');
-        }
-    };
-
     const goBack = () => navigate(-1);
     const goHome = () => navigate('/');
 
@@ -183,7 +171,7 @@ export function useProductDetail() {
             filteredNames, filteredShops
         },
         handlers: {
-            startEditing, saveEdit, handleVolumeChange, handleDelete, handleArchive, consumeCount, goBack, goHome
+            startEditing, saveEdit, handleVolumeChange, handleDelete, consumeCount, goBack, goHome
         }
     };
 }

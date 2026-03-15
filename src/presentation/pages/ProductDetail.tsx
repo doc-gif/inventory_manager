@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-    ArrowLeft, Edit3, Archive, Trash2, Save, Tag, CalendarDays,
+    ArrowLeft, Edit3, Trash2, Save, Tag, CalendarDays,
     CalendarClock, Package, Droplets, Clock, X, Store, Layers, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/presentation/components/ui/Button';
@@ -9,16 +9,15 @@ import { Label } from '@/presentation/components/ui/Label';
 import { Card } from '@/presentation/components/ui/Card';
 import { Badge } from '@/presentation/components/ui/Badge';
 import { VolumeGauge } from '@/presentation/components/VolumeGauge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog'; // 🌟 ダイアログをインポート
 import { CATEGORIES, type ContentUnit } from '@/domain/models/inventory-management-types';
 import { useProductDetail } from '@/presentation/hooks/useProductDetail';
 
 export function ProductDetail() {
-    // カスタムフックからすべての状態とロジックを受け取る
     const {
         item, meta, ui, uiSetters, editForm, editSetters, dropdowns, handlers
     } = useProductDetail();
 
-    // 対象商品が見つからない場合
     if (!item) {
         return (
             <div className="flex flex-col items-center justify-center h-full py-20">
@@ -114,37 +113,42 @@ export function ProductDetail() {
                                 )}
                             </div>
 
-                            {/* 2. 購入情報 */}
-                            <div className="pt-3 border-t border-border space-y-4">
-                                {item.shop && (
+                            {/* 🌟 改善: 2. 購入情報（在庫情報の上に移動し、綺麗に整理） */}
+                            <div className="pt-4 border-t border-border space-y-3">
+                                <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                                    <Store className="w-3.5 h-3.5" />
+                                    購入情報
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    {/* 前回購入価格 */}
                                     <div>
-                                        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                            <Store className="w-3 h-3" />
-                                            買った場所
-                                        </p>
-                                        <p className="font-medium">{item.shop}</p>
-                                    </div>
-                                )}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Tag className="w-3 h-3" />購入価格</p>
+                                        <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1"><Tag className="w-3 h-3"/>前回購入</p>
                                         <p className="font-medium">{item.price > 0 ? `¥${item.price.toLocaleString()}` : '未設定'}</p>
                                     </div>
+                                    {/* 購入日 */}
                                     <div>
-                                        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><CalendarDays className="w-3 h-3" />購入日</p>
-                                        <p className="font-medium">{item.purchaseDate || '未設定'}</p>
+                                        <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1"><CalendarDays className="w-3 h-3"/>購入日</p>
+                                        <p className="font-medium">{item.purchaseDate ? new Date(item.purchaseDate).toLocaleDateString('ja-JP') : '未設定'}</p>
                                     </div>
+                                    {/* 底値 */}
+                                    {meta.lowestPrice !== null && (
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1"><Tag className="w-3 h-3"/>底値</p>
+                                            <p className="font-medium text-emerald-600">¥{meta.lowestPrice.toLocaleString()}</p>
+                                        </div>
+                                    )}
+                                    {/* お店 */}
+                                    {item.shop && (
+                                        <div>
+                                            <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1"><Store className="w-3 h-3"/>買った場所</p>
+                                            <p className="font-medium">{item.shop}</p>
+                                        </div>
+                                    )}
                                 </div>
-                                {meta.lowestPrice !== null && (
-                                    <div>
-                                        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Tag className="w-3 h-3" />底値（過去最安値）</p>
-                                        <p className="text-emerald-600 font-bold">¥{meta.lowestPrice.toLocaleString()}</p>
-                                    </div>
-                                )}
                             </div>
 
-                            {/* 3. 在庫情報 */}
-                            <div className="pt-3 border-t border-border">
+                            {/* 3. 在庫情報（管理タイプ） */}
+                            <div className="pt-4 border-t border-border">
                                 {item.type === 'count' ? (
                                     <div className="space-y-2">
                                         <p className="text-xs text-muted-foreground font-bold">現在の在庫数</p>
@@ -199,11 +203,24 @@ export function ProductDetail() {
                                     )}
                                 </div>
                             )}
+
+                            {/* 🌟 改善: 削除ボタンをカード内の最下部に配置 */}
+                            <div className="pt-4 mt-2 border-t border-border/50 flex justify-end">
+                                <Button
+                                    variant="ghost"
+                                    className="h-9 px-3 text-red-600 gap-1.5 hover:bg-red-50 hover:text-red-700 font-medium shrink-0"
+                                    onClick={() => uiSetters.setShowDeleteConfirm(true)}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    この商品を削除
+                                </Button>
+                            </div>
+
                         </div>
                     </Card>
                 ) : (
                     /* ==========================================================
-                       Edit form（編集モード）
+                       Edit form（編集モード）※順序はすでに購入情報が上になっています
                        ========================================================== */
                     <Card className="p-5 space-y-5">
                         {/* 1. 基本情報・内容量 */}
@@ -295,7 +312,6 @@ export function ProductDetail() {
                                 </div>
                                 <div className="space-y-1.5 min-w-0">
                                     <Label className="text-xs text-muted-foreground">購入日</Label>
-                                    {/* 購入日の変更は現状フックにないため、日付のみ表示（必要ならフックに追加） */}
                                     <div className="h-11 w-full bg-muted/20 border border-border rounded-md px-3 flex items-center text-sm text-muted-foreground">
                                         {item.purchaseDate}
                                     </div>
@@ -411,7 +427,7 @@ export function ProductDetail() {
 
                         {/* 4. 詳細設定 */}
                         <div className="space-y-4 pt-4 border-t border-border">
-                            <div className="space-y-1.5"><Label className="text-xs font-bold">開封日</Label><Input type="date" value={editForm.editOpenedDate} onChange={(e) => editSetters.setEditOpenedDate(e.target.value)} className="h-11 w-full text-base px-2" /></div>
+                            <div className="space-y-1.5"><Label className="text-xs font-bold">開封日</Label><Input type="date" value={editForm.editOpenedDate} onChange={(e) => editSetters.setEditOpenedDate(e.target.value)} className="h-11 w-full text-base" /></div>
                             <div className="space-y-1.5"><Label className="text-xs font-bold">使用期限（日数）</Label><Input type="number" value={editForm.editExpiryDays} onChange={(e) => editSetters.setEditExpiryDays(e.target.value)} placeholder="例：30" className="h-11 w-full text-base" /></div>
                         </div>
                     </Card>
@@ -434,26 +450,32 @@ export function ProductDetail() {
                     </Card>
                 )}
 
-                {/* Actions */}
-                <div className="flex gap-2 pt-2">
-                    <Button variant="outline" className="flex-1 gap-1.5" onClick={handlers.handleArchive}>
-                        <Archive className="w-4 h-4" />{item.isArchived ? 'アーカイブ解除' : 'アーカイブ'}
-                    </Button>
-                    <Button variant="destructive" className="gap-1.5" onClick={() => uiSetters.setShowDeleteConfirm(true)}>
-                        <Trash2 className="w-4 h-4" />削除
-                    </Button>
-                </div>
-
-                {/* Delete confirmation */}
-                {ui.showDeleteConfirm && (
-                    <Card className="p-4 border-red-200 bg-red-50">
-                        <p className="text-sm text-red-700 mb-3">「{item.name}」を削除しますか？この操作は取り消せません。</p>
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={() => uiSetters.setShowDeleteConfirm(false)} className="flex-1">キャンセル</Button>
-                            <Button variant="destructive" size="sm" onClick={handlers.handleDelete} className="flex-1">削除する</Button>
+                {/* 🌟 改善: Delete confirmation をダイアログ（Modal）に変更 */}
+                <Dialog open={ui.showDeleteConfirm} onOpenChange={uiSetters.setShowDeleteConfirm}>
+                    <DialogContent className="sm:max-w-md w-[90%] rounded-2xl">
+                        <DialogHeader>
+                            <DialogTitle className="text-left flex items-center gap-2">
+                                <Trash2 className="w-5 h-5 text-red-500" />
+                                商品の削除
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="py-2">
+                            <p className="text-sm text-foreground leading-relaxed">
+                                「<span className="font-bold">{item.name}</span>」を在庫リストから完全に削除しますか？<br />
+                                <span className="text-xs text-muted-foreground block mt-2">※この操作は取り消すことができません。</span>
+                            </p>
                         </div>
-                    </Card>
-                )}
+                        <div className="flex gap-2 mt-2">
+                            <Button variant="outline" className="flex-1" onClick={() => uiSetters.setShowDeleteConfirm(false)}>
+                                キャンセル
+                            </Button>
+                            <Button variant="destructive" className="flex-1" onClick={handlers.handleDelete}>
+                                削除する
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
             </div>
         </div>
     );
