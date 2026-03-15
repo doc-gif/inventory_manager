@@ -161,7 +161,7 @@ export function AddProduct() {
               </div>
               <div className="space-y-1.5 min-w-0">
                 <Label htmlFor="purchaseDate" className="text-xs text-muted-foreground">購入日</Label>
-                <Input id="purchaseDate" type="date" value={form.purchaseDate} onChange={(e) => setters.setPurchaseDate(e.target.value)} className="h-11 w-full text-base px-2" />
+                <Input id="purchaseDate" type="date" value={form.purchaseDate} onChange={(e) => setters.setPurchaseDate(e.target.value)} className="h-11 w-full text-base" />
               </div>
             </div>
           </div>
