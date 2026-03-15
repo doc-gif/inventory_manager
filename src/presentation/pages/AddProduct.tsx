@@ -12,21 +12,25 @@ export function AddProduct() {
   const { form, setters, ui, uiSetters, dropdowns, handlers } = useAddProduct();
 
   return (
-      /* 🌟 修正1: 親要素から overflow-x-hidden を削除し、w-full の扱いを安全に変更 */
       <div className="min-h-screen pb-24 bg-background">
         {/* ==========================================
             Header
         ========================================== */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3">
-          <div className="flex items-center gap-3 max-w-md mx-auto">
-            <Button variant="ghost" size="sm" onClick={handlers.goBack} className="p-1 -ml-1">
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-2">
+          <div className="flex items-center gap-1.5 max-w-md mx-auto">
+            {/* 🌟 改善: タップ領域を広げ（48x48px）、見た目の位置は-ml-3で調整 */}
+            <Button
+                variant="ghost"
+                onClick={handlers.goBack}
+                className="w-12 h-12 p-0 rounded-full -ml-3 shrink-0 text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
+                aria-label="戻る"
+            >
               <ArrowLeft className="w-6 h-6" />
             </Button>
             <h1 className="text-base font-bold">商品を追加</h1>
           </div>
         </div>
 
-        {/* 🌟 修正2: form全体に max-w-md と mx-auto を適用し、paddingを box-sizing:border-box で制御 */}
         <form onSubmit={handlers.handleSubmit} className="max-w-md mx-auto px-4 pt-4 space-y-6">
 
           {/* ==========================================
@@ -112,6 +116,19 @@ export function AddProduct() {
             </div>
 
             <div className="space-y-1.5">
+              <Label className="text-sm font-bold">カテゴリ</Label>
+              <div className="flex flex-wrap gap-2">
+                {/* 🌟 categories はフック等から取る想定のままにしています */}
+                {["日用品", "食品・飲料", "スキンケア・コスメ", "医薬品・衛生用品", "その他"].map((cat) => (
+                    <button key={cat} type="button" onClick={() => setters.setCategory(cat as any)}
+                            className={`px-3 py-1.5 rounded-full text-xs transition-colors ${form.category === cat ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                      {cat}
+                    </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
               <Label className="text-sm font-bold">内容量</Label>
               <div className="flex gap-2">
                 <Input inputMode="decimal" placeholder="例: 300" value={form.contentAmount} onChange={(e) => setters.setContentAmount(e.target.value)} className="h-11 flex-1 min-w-0 text-base" />
@@ -153,7 +170,6 @@ export function AddProduct() {
               )}
             </div>
 
-            {/* 🌟 2列配置の再実装：text-baseで自動ズームを防ぎ、はみ出しを解消 */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5 min-w-0">
                 <Label htmlFor="price" className="text-xs text-muted-foreground">購入価格 (円)</Label>
