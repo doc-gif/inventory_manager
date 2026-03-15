@@ -1,17 +1,13 @@
 import React from "react";
-import { useNavigate } from "react-router";
-import { Plus, Package, Search, AlertTriangle, ChevronDown } from "lucide-react";
+import { Package, Search, AlertTriangle, ChevronDown } from "lucide-react";
 
 import { CATEGORIES } from "@/domain/models/inventory-management-types";
 import { useInventoryStore } from "@/application/stores/useInventoryStore";
 
-import { Button } from "@/presentation/components/ui/Button";
 import { Input } from "@/presentation/components/ui/Input";
 import { InventoryCard } from "@/presentation/components/InventoryCard";
 
 export function InventoryList() {
-    const navigate = useNavigate();
-
     const items = useInventoryStore((s) => s.items);
     const isLowStock = useInventoryStore((s) => s.isLowStock);
     const getUniqueShops = useInventoryStore((s) => s.getUniqueShops);
@@ -39,26 +35,11 @@ export function InventoryList() {
 
     return (
         <div className="pb-24">
-            {/* 🌟 改善: ヘッダー＆フィルター領域の再設計 */}
-            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 pt-4 pb-3">
+            {/* 🌟 改善: 重複していたタイトルと追加ボタンを削除し、フィルター領域のみにスッキリと再設計 */}
+            <div className="px-4 pt-2 pb-4 border-b border-border/50 space-y-3">
 
-                {/* 1. タイトルと追加ボタン */}
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h1 className="flex items-center gap-2 font-bold">
-                            <Package className="w-5 h-5 text-primary" />
-                            在庫管理
-                        </h1>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{activeItems.length}件の商品を管理中</p>
-                    </div>
-                    <Button onClick={() => navigate("/add")} className="rounded-xl gap-1.5 h-9 px-3 shadow-sm" size="sm">
-                        <Plus className="w-4 h-4" />
-                        追加
-                    </Button>
-                </div>
-
-                {/* 2. 検索バー ＆ 在庫少トグル */}
-                <div className="flex items-center gap-2 mb-3">
+                {/* 1. 検索バー ＆ 在庫少トグル */}
+                <div className="flex items-center gap-2">
                     <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
@@ -68,7 +49,6 @@ export function InventoryList() {
                             className="pl-9 h-11 rounded-xl bg-muted/30 border-border/50 text-sm focus:bg-background"
                         />
                     </div>
-                    {/* 💡 改善: 「在庫少」を独立したON/OFFのスイッチ（ボタン）として明示 */}
                     <button
                         type="button"
                         onClick={() => setShowLowOnly(!showLowOnly)}
@@ -83,7 +63,7 @@ export function InventoryList() {
                     </button>
                 </div>
 
-                {/* 3. カテゴリ ＆ お店ドロップダウン（横並び2分割） */}
+                {/* 2. カテゴリ ＆ お店ドロップダウン */}
                 <div className="flex gap-2">
                     {/* カテゴリ */}
                     <div className="relative flex-1">
@@ -100,7 +80,7 @@ export function InventoryList() {
                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     </div>
 
-                    {/* お店 (登録されたお店がある時だけ表示、ない時はカテゴリが全幅になります) */}
+                    {/* お店 (登録されたお店がある時だけ表示) */}
                     {uniqueShops.length > 0 && (
                         <div className="relative flex-1">
                             <select
@@ -127,7 +107,8 @@ export function InventoryList() {
                         {activeItems.length === 0 ? (
                             <div className="text-center">
                                 <p className="font-medium text-foreground mb-1">まだ商品が登録されていません</p>
-                                <p className="text-xs">右上の「追加」ボタンから登録しましょう</p>
+                                {/* 🌟 改善: 文言を「右上」から「画面下」のボタンに変更 */}
+                                <p className="text-xs">画面下の「追加」ボタンから登録しましょう</p>
                             </div>
                         ) : (
                             <div className="text-center">

@@ -1,3 +1,4 @@
+// src/presentation/components/LayoutWithNavigation.tsx
 import { Outlet, ScrollRestoration } from "react-router";
 import { Toaster } from "sonner";
 import React from "react";
@@ -17,7 +18,16 @@ export function LayoutPage() {
 
             <InstallPrompt />
             <ReloadPrompt />
-            <Toaster position="top-center" />
+
+            <Toaster
+                position="bottom-center"
+                toastOptions={{
+                    style: {
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                    }
+                }}
+            />
         </div>
     );
 }

@@ -111,10 +111,8 @@ export function ShoppingList() {
             </Dialog>
 
             <div ref={listRef} className="bg-background rounded-xl p-2 space-y-4">
-                <div className="text-center pb-2 border-b border-border/50">
-                    <h2 className="font-bold text-lg">📝 買い物リスト</h2>
-                    <p className="text-xs text-muted-foreground">{new Date().toLocaleDateString('ja-JP')} 現在</p>
-                </div>
+
+                {/* 🌟 改善: HomePageに美しいヘッダーができたため、ここにあった古い「📝買い物リスト」の見出しを削除しました */}
 
                 {shopNames.map((shop) => (
                     <div key={shop} className="space-y-2">
@@ -154,17 +152,7 @@ export function ShoppingList() {
                                                 </div>
                                             </div>
 
-                                            {/* 価格と補充ボタンをまとめた右側エリア */}
-                                            <div className="flex items-center gap-3 shrink-0 pl-2">
-                                                {/* 🌟 改善: 前回購入価格を表示 */}
-                                                {item.price > 0 && (
-                                                    <div className="text-right flex flex-col items-end justify-center">
-                                                        <span className="text-[10px] text-muted-foreground block font-medium leading-tight">前回購入</span>
-                                                        <span className="text-sm font-bold text-foreground">¥{item.price.toLocaleString()}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* 補充ボタン（開閉トグル） */}
+                                            <div className="shrink-0 pl-2">
                                                 <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors ${
                                                     isExpanded
                                                         ? 'bg-muted/50 text-muted-foreground'

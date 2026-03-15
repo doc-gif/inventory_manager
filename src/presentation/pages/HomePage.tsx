@@ -1,58 +1,87 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router"; // 🌟 追加
-import { Package, ShoppingCart, Plus } from "lucide-react"; // 🌟 Plusを追加
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router";
+import { Plus } from "lucide-react";
 import { InventoryList } from "@/presentation/components/InventoryList";
 import { ShoppingList } from "@/presentation/components/ShoppingList";
+import { useInstallPrompt } from "@/presentation/hooks/useInstallPrompt"; // 🌟 追加
 
 export function HomePage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<"inventory" | "shopping">("inventory");
 
+    // 🌟 改善: プロンプトが表示されているかどうか（状態）を取得
+    const { showPrompt } = useInstallPrompt();
+
+    const today = new Date();
+    const dateString = `${today.getMonth() + 1}月${today.getDate()}日（${['日', '月', '火', '水', '木', '金', '土'][today.getDay()]}）`;
+
+    // Layout側のナビゲーションから送られてくる切り替え信号を受け取る
+    useEffect(() => {
+        const handleTabChange = (e: CustomEvent<"inventory" | "shopping">) => {
+            setActiveTab(e.detail);
+        };
+        // @ts-ignore
+        window.addEventListener('change-home-tab', handleTabChange);
+        return () => {
+            // @ts-ignore
+            window.removeEventListener('change-home-tab', handleTabChange);
+        };
+    }, []);
+
     return (
-        <div className="flex flex-col h-full relative">
-            {/* 上部固定のタブ切り替えナビゲーション */}
-            <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border pt-3 pb-3 px-4">
-                <div className="flex p-1 bg-muted/50 rounded-xl border border-border/50">
+        <div className="flex flex-col h-full relative pb-24">
+
+            {/* 美しい日付ヘッダーと、iOSライクなセグメントコントロールを統合 */}
+            <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-2xl border-b border-border/50 pt-6 pb-3 px-4">
+                <p className="text-[11px] font-bold text-muted-foreground tracking-wider mb-2 px-1">
+                    {dateString}
+                </p>
+
+                {/* 洗練されたリスト切り替えタブ */}
+                <div className="flex p-1 bg-muted/50 rounded-xl border border-border/50 mb-1">
                     <button
                         type="button"
                         onClick={() => setActiveTab("inventory")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-all ${
                             activeTab === "inventory"
-                                ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
-                        <Package className="w-4 h-4" />
                         在庫一覧
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab("shopping")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                        className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-all ${
                             activeTab === "shopping"
-                                ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
                                 : "text-muted-foreground hover:text-foreground"
                         }`}
                     >
-                        <ShoppingCart className="w-4 h-4" />
                         買い物リスト
                     </button>
                 </div>
             </div>
 
-            {/* タブに応じたコンテンツの表示 */}
+            {/* コンテンツ */}
             <div className="flex-1">
                 {activeTab === "inventory" ? <InventoryList /> : <ShoppingList />}
             </div>
 
-            {/* 🌟 改善: 右下に固定されるフローティングアクションボタン (FAB) */}
+            {/* 🌟 改善: プロンプト表示中はFABをスケールダウンさせて美しく隠すアニメーション */}
             <button
                 type="button"
                 onClick={() => navigate("/add")}
-                className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-primary text-primary-foreground rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+                className={`fixed right-6 z-40 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 ${
+                    showPrompt
+                        ? "bottom-8 scale-0 opacity-0 pointer-events-none" // 開いている時は小さく透明にして消す
+                        : "bottom-8 scale-100 opacity-100 hover:scale-105 active:scale-95" // 閉じている時は通常表示
+                }`}
             >
                 <Plus className="w-6 h-6" />
             </button>
+
         </div>
     );
 }

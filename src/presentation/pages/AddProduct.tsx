@@ -16,9 +16,9 @@ export function AddProduct() {
         {/* ==========================================
             Header
         ========================================== */}
-        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-2">
-          <div className="flex items-center gap-1.5 max-w-md mx-auto">
-            {/* 🌟 改善: タップ領域を広げ（48x48px）、見た目の位置は-ml-3で調整 */}
+        {/* 🌟 改善: ホーム画面と同じ、すりガラス＋太字のモダーンなデザインに統一 */}
+        <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-2xl border-b border-border/50 px-4 pt-4 pb-3">
+          <div className="flex items-center gap-1 max-w-md mx-auto">
             <Button
                 variant="ghost"
                 onClick={handlers.goBack}
@@ -27,7 +27,8 @@ export function AddProduct() {
             >
               <ArrowLeft className="w-6 h-6" />
             </Button>
-            <h1 className="text-base font-bold">商品を追加</h1>
+            {/* ホーム画面のタイポグラフィに合わせてサイズと太さを調整 */}
+            <h1 className="text-xl font-black tracking-tight text-foreground -mt-0.5">商品を追加</h1>
           </div>
         </div>
 
