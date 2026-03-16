@@ -1,12 +1,12 @@
-# 📦 [アプリ名] (例: StockSync)
+# 📦 おうちストック
 
 [![App Link](https://img.shields.io/badge/🚀_Play_App-Click_Here-blue?style=for-the-badge)](https://inventory-manager-eh6.pages.dev/)
 
 「名もなき家事」をなくす。日用品の在庫管理と買い物リストをシームレスに繋ぐ、モバイルファーストなPWA（Progressive Web App）です。
 
-|📱 在庫少フィルターと買い物リストの連携|📷 バーコード読み取りによる商品情報の自動入力|
-|-|-|
-|<img width="400" src="https://raw.githubusercontent.com/wiki/doc-gif/inventory_manager/images/inventory_manager_home.gif">|<img width="400" src="https://raw.githubusercontent.com/wiki/doc-gif/inventory_manager/images/inventory_manager_add_product.gif">|
+|                                                    📱 在庫少フィルターと買い物リストの連携                                                    |                                                      📷 バーコード読み取りによる商品情報の自動入力                                                      |
+|:---------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------------------------------------------:|
+| <img width="400" src="https://raw.githubusercontent.com/wiki/doc-gif/inventory_manager/images/inventory_manager_home.gif">  | <img width="400" src="https://raw.githubusercontent.com/wiki/doc-gif/inventory_manager/images/inventory_manager_add_product.gif">  |
 
 ---
 
