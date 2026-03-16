@@ -1,11 +1,65 @@
+# 📦 [アプリ名] (例: StockSync)
 
-  # 買い物管理アプリ
+[![App Link](https://img.shields.io/badge/🚀_Play_App-Click_Here-blue?style=for-the-badge)](https://inventory-manager-eh6.pages.dev/)
 
-  This is a code bundle for 買い物管理アプリ. The original project is available at https://www.figma.com/design/NNVf75HWBxzNqcgecEElyT/%E8%B2%B7%E3%81%84%E7%89%A9%E7%AE%A1%E7%90%86%E3%82%A2%E3%83%97%E3%83%AA.
+「名もなき家事」をなくす。日用品の在庫管理と買い物リストをシームレスに繋ぐ、モバイルファーストなPWA（Progressive Web App）です。
 
-  ## Running the code
+|📱 在庫少フィルターと買い物リストの連携|📷 バーコード読み取りによる商品情報の自動入力|
+|-|-|
+|<img width="400" src="https://raw.githubusercontent.com/wiki/doc-gif/inventory_manager/images/inventory_manager_home.gif">|<img width="400" src="https://raw.githubusercontent.com/wiki/doc-gif/inventory_manager/images/inventory_manager_add_product.gif">|
 
-  Run `npm i` to install the dependencies.
+---
 
-  Run `npm run dev` to start the development server.
-  
+## 👤 For Users (アプリの機能と特徴)
+
+日用品の「買い忘れ」や「重複買い」を防ぎ、日々の管理を自動化します。既存のメモアプリのように在庫と買い物リストを別々に管理する手間はもうありません。
+
+### ✨ 主な機能
+* **スマート在庫管理:** 数量（個数）だけでなく、洗剤などの「残量（ゲージ）」による直感的な管理に対応。
+* **買い物リストの自動連携:** 「在庫少」の閾値を下回った商品が、自動的に買い物リストへピックアップされます。
+* **バーコードスキャン登録:** カメラでバーコードを読み取り、商品情報を自動入力。
+* **リストの画像共有機能:** ワンタップで買い物リストを画像化し、LINE等で家族に簡単にシェアできます。
+* **インストール機能 (PWA):** ホーム画面に追加することで、ネイティブアプリのように全画面でサクサク動作します。
+
+---
+
+## 👨‍💻 For Developers & Recruiters (開発の裏側・設計思想)
+
+ここからは、本アプリのアーキテクチャ設計や、UI/UXデザインにおける「こだわり」についての解説です。
+
+### 🎨 UI/UX デザインへのこだわり
+毎日ストレスなく使えるよう、徹底的に「手触り」と「認知負荷の低減」にこだわりました。
+
+1. **ノイズレスなナビゲーションと視線誘導**
+   * 初期は画面下部にタブナビゲーションを配置していましたが、視線移動のノイズを減らすため、**上部のセグメントコントロール（タブ）と右下のアクションボタン（FAB）に分離**しました。これにより「リストの閲覧」と「商品の追加」のメンタルモデルを明確に分けています。
+2. **動的なアニメーションによる干渉回避**
+   * インストールを促すボトムシートなどが下からせり上がる際、**右下のFABが「シュッ」と縮小して隠れる動的アニメーション**を実装。要素同士の重なりを防ぎ、ユーザーに「今は通知に集中する時間」という明確な視線誘導を行っています。
+3. **iOSライクなリキッドガラス（Glassmorphism）デザイン**
+   * ヘッダー部分に `backdrop-blur` と `saturate` を用いたすりガラス効果を実装。スクロール時にコンテンツが背後に美しく透ける、モダンで奥行きのある表現を採用しています。
+4. **タップターゲットの最適化（ワンハンド操作）**
+   * スマホでの誤タップを防ぐため、アイコンの見た目はそのままに、透明なパディングを用いてタップ領域を48x48px以上確保（Apple/Googleのガイドラインに準拠）しています。
+
+### 🏗 アーキテクチャ設計
+保守性と拡張性を高めるため、フロントエンドにおけるレイヤードアーキテクチャ（関心の分離）を意識したディレクトリ構成を採用しています。
+
+* **Presentation Layer (`/src/presentation`)**: 
+  * UIコンポーネント（React）と、UIの状態管理を行うカスタムフック（`useProductDetail` 等）を配置。ロジックとビューを明確に分離しています。
+* **Application Layer (`/src/application`)**:
+  * グローバルな状態管理（Zustandを使用）を行い、ユースケースを実現します。
+* **Domain Layer (`/src/domain`)**:
+  * ビジネスルールや型定義（`inventory-management-types`）、純粋な計算ロジックをカプセル化し、特定のUIに依存しない設計としています。
+
+### 🛠 使用技術
+* **Frontend:** React, TypeScript, Vite
+* **Styling:** Tailwind CSS, Lucide React (Icons)
+* **State Management:** Zustand
+* **Routing:** React Router
+* **PWA:** vite-plugin-pwa
+* **Others:** Sonner (Toast Notifications)
+
+### 🚀 今後の展望・ロードマップ
+* 家族間でのリアルタイムデータ同期機能（Firebase等のBaaS導入）
+* アフィリエイトリンクを活用した、アプリ内からのシームレスな商品補充（マネタイズモデルの検証）
+
+---
+**Author:** Hyo Ishitobi
