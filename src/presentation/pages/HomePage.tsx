@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import { InventoryList } from "@/presentation/components/InventoryList";
 import { ShoppingList } from "@/presentation/components/ShoppingList";
-import { useInstallPrompt } from "@/presentation/hooks/useInstallPrompt"; // 🌟 追加
+import { useInstallPrompt } from "@/presentation/hooks/useInstallPrompt";
 
 export function HomePage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<"inventory" | "shopping">("inventory");
 
-    // 🌟 改善: プロンプトが表示されているかどうか（状態）を取得
     const { showPrompt } = useInstallPrompt();
 
     const today = new Date();
@@ -33,9 +32,19 @@ export function HomePage() {
 
             {/* 美しい日付ヘッダーと、iOSライクなセグメントコントロールを統合 */}
             <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-2xl border-b border-border/50 pt-6 pb-3 px-4">
-                <p className="text-[11px] font-bold text-muted-foreground tracking-wider mb-2 px-1">
-                    {dateString}
-                </p>
+                <div className="flex justify-between items-center mb-1 pl-1">
+                    <p className="text-[11px] font-bold text-muted-foreground tracking-wider">
+                        {dateString}
+                    </p>
+                    <button
+                        onClick={() => navigate("/settings")}
+                        className="w-11 h-11 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full transition-colors -mr-3 -mt-2 active:scale-95"
+                        aria-label="設定"
+                    >
+                        {/* アイコン自体は少しだけ見やすく w-5 h-5 に調整 */}
+                        <Settings className="w-5 h-5" />
+                    </button>
+                </div>
 
                 {/* 洗練されたリスト切り替えタブ */}
                 <div className="flex p-1 bg-muted/50 rounded-xl border border-border/50 mb-1">

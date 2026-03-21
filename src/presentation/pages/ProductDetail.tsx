@@ -9,7 +9,7 @@ import { Label } from '@/presentation/components/ui/Label';
 import { Card } from '@/presentation/components/ui/Card';
 import { Badge } from '@/presentation/components/ui/Badge';
 import { VolumeGauge } from '@/presentation/components/VolumeGauge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog'; // 🌟 ダイアログをインポート
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/presentation/components/ui/Dialog';
 import { CATEGORIES, type ContentUnit } from '@/domain/models/inventory-management-types';
 import { useProductDetail } from '@/presentation/hooks/useProductDetail';
 

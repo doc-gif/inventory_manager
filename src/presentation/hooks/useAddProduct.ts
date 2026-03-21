@@ -4,11 +4,16 @@ import { toast } from 'sonner';
 import { type Category, type ContentUnit, type ItemType } from '@/domain/models/inventory-management-types';
 import { useInventoryStore } from '@/application/stores/useInventoryStore';
 import { lookupBarcodeForAddProduct } from '@/application/use-cases/BarcodeLookupService';
+import { selectUniqueShops } from '@/application/stores/inventorySelectors';
 
 export function useAddProduct() {
     const navigate = useNavigate();
-    const { addItem, items, getUniqueShops } = useInventoryStore();
-    const uniqueShops = getUniqueShops();
+
+    const addItem = useInventoryStore(s => s.addItem);
+    const items = useInventoryStore(s => s.items);
+    const history = useInventoryStore(s => s.history);
+
+    const uniqueShops = selectUniqueShops(items, history);
 
     // ==========================================
     // 1. フォームの状態（入力値）
@@ -134,7 +139,6 @@ export function useAddProduct() {
 
     const goBack = () => navigate(-1);
 
-    // UI（コンポーネント）側に必要なものだけをグループ化して返す
     return {
         form: {
             name, brand, type, category, count, volumeLevel, price, purchaseDate,

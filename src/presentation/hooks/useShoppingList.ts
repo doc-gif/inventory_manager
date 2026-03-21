@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-// 👇 toPng から toBlob に戻します
 import { toBlob } from 'html-to-image';
 import { useInventoryStore } from '@/application/stores/useInventoryStore';
+import { isLowStock, selectLowestPrice } from '@/application/stores/inventorySelectors';
 
 export function useShoppingList() {
-    const { items, isLowStock, getLowestPrice } = useInventoryStore();
+    const items = useInventoryStore((s) => s.items);
+    const history = useInventoryStore((s) => s.history);
+
     const listRef = useRef<HTMLDivElement>(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -22,6 +24,8 @@ export function useShoppingList() {
     }, {} as Record<string, typeof items>);
 
     const shopNames = Object.keys(groupedByShop).sort();
+
+    const getLowestPrice = (name: string) => selectLowestPrice(history, name);
 
     const handleCopyText = async () => {
         if (shopNames.length === 0) return;
@@ -61,7 +65,6 @@ export function useShoppingList() {
                 return;
             }
 
-            // Blobを保存し、プレビュー用のURLを発行する
             setImageBlob(blob);
             setPreviewImageUrl(URL.createObjectURL(blob));
 
@@ -73,14 +76,13 @@ export function useShoppingList() {
         }
     };
 
-    // ②-A シェア専用処理（LINEなどで送る）
+    // ②-A シェア専用処理
     const handleShare = async () => {
         if (!imageBlob || !previewImageUrl) return;
 
         const fileName = `買い物リスト_${new Date().toISOString().split('T')[0]}.png`;
         const file = new File([imageBlob], fileName, { type: 'image/png' });
 
-        // ブラウザが画像ファイルのシェアに対応しているかチェック
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
@@ -95,7 +97,7 @@ export function useShoppingList() {
         }
     };
 
-    // ②-B ダウンロード専用処理（スマホ・PC本体に保存）
+    // ②-B ダウンロード専用処理
     const handleDownload = () => {
         if (!previewImageUrl) return;
 
@@ -111,7 +113,6 @@ export function useShoppingList() {
         toast.success('画像を端末に保存しました');
     };
 
-    // プレビューを閉じる時のクリーンアップ処理
     const closePreview = () => {
         setPreviewImageUrl(null);
         setImageBlob(null);

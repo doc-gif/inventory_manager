@@ -5,6 +5,7 @@ import { Minus, AlertTriangle, Clock, Tag, CalendarClock, Package, Droplets, Sto
 import type { InventoryItem } from "@/domain/models/inventory-management-types";
 import { getUnitPrice } from "@/domain/services/pricing";
 import { useInventoryStore } from "@/application/stores/useInventoryStore";
+import { isLowStock, isExpiringSoon, isExpired, getDaysUntilExpiry } from "@/application/stores/inventorySelectors";
 
 import { Card } from "@/presentation/components/ui/Card";
 import { Button } from "@/presentation/components/ui/Button";
@@ -18,11 +19,6 @@ export function InventoryCard({ item }: Props) {
 
   const consumeCount = useInventoryStore((s) => s.consumeCount);
   const setVolumeLevel = useInventoryStore((s) => s.setVolumeLevel);
-
-  const isLowStock = useInventoryStore((s) => s.isLowStock);
-  const isExpiringSoon = useInventoryStore((s) => s.isExpiringSoon);
-  const isExpired = useInventoryStore((s) => s.isExpired);
-  const getDaysUntilExpiry = useInventoryStore((s) => s.getDaysUntilExpiry);
 
   const lowStock = isLowStock(item);
   const expiringSoon = isExpiringSoon(item);

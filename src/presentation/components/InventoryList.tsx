@@ -3,16 +3,17 @@ import { Package, Search, AlertTriangle, ChevronDown } from "lucide-react";
 
 import { CATEGORIES } from "@/domain/models/inventory-management-types";
 import { useInventoryStore } from "@/application/stores/useInventoryStore";
+import { selectUniqueShops, selectActiveItems, isLowStock } from "@/application/stores/inventorySelectors";
 
 import { Input } from "@/presentation/components/ui/Input";
 import { InventoryCard } from "@/presentation/components/InventoryCard";
 
 export function InventoryList() {
     const items = useInventoryStore((s) => s.items);
-    const isLowStock = useInventoryStore((s) => s.isLowStock);
-    const getUniqueShops = useInventoryStore((s) => s.getUniqueShops);
-    const activeItems = React.useMemo(() => items.filter((it) => !it.isArchived), [items]);
-    const uniqueShops = getUniqueShops();
+    const history = useInventoryStore((s) => s.history);
+
+    const activeItems = React.useMemo(() => selectActiveItems(items), [items]);
+    const uniqueShops = selectUniqueShops(items, history);
 
     const [search, setSearch] = React.useState("");
     const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
@@ -28,10 +29,24 @@ export function InventoryList() {
         }
         if (selectedCategory) result = result.filter((item) => item.category === selectedCategory);
         if (selectedShop) result = result.filter((item) => item.shop === selectedShop);
+
         if (showLowOnly) result = result.filter((item) => isLowStock(item));
 
+        result.sort((a, b) => {
+            // アイテムに作成日時(createdAt)があればそれを使う。無ければIDを代用する。
+            // ※お使いの型定義に合わせて 'createdAt' などのプロパティ名は調整してください
+            const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+            if (timeA !== timeB) {
+                return timeB - timeA; // 数字が大きい(新しい)順に並べる（降順）
+            }
+            // 日時データが無い場合は、IDのアルファベット順などで順位を固定する
+            return String(b.id).localeCompare(String(a.id));
+        });
+
         return result;
-    }, [activeItems, search, selectedCategory, selectedShop, showLowOnly, isLowStock]);
+    }, [activeItems, search, selectedCategory, selectedShop, showLowOnly]);
 
     return (
         <div className="pb-24">

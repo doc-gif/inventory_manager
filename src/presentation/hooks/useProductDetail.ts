@@ -2,23 +2,27 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
-import {type Category, type ContentUnit, ItemType} from '@/domain/models/inventory-management-types';
+import { type Category, type ContentUnit, ItemType } from '@/domain/models/inventory-management-types';
 import { useInventoryStore } from '@/application/stores/useInventoryStore';
 import { formatContent, getUnitPrice } from '@/domain/services/pricing';
+import {
+    isLowStock, isExpired, isExpiringSoon, getDaysUntilExpiry,
+    selectLowestPrice, selectUniqueShops
+} from '@/application/stores/inventorySelectors';
 
 export function useProductDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
-    const {
-        items, updateItem, consumeCount, setVolumeLevel,
-        deleteItem,
-        isLowStock, isExpired, isExpiringSoon,
-        getDaysUntilExpiry, getLowestPrice, history, getUniqueShops,
-    } = useInventoryStore();
+    const items = useInventoryStore(s => s.items);
+    const history = useInventoryStore(s => s.history);
+    const updateItem = useInventoryStore(s => s.updateItem);
+    const consumeCount = useInventoryStore(s => s.consumeCount);
+    const setVolumeLevel = useInventoryStore(s => s.setVolumeLevel);
+    const deleteItem = useInventoryStore(s => s.deleteItem);
 
     const item = items.find((i) => i.id === id);
-    const uniqueShops = getUniqueShops();
+    const uniqueShops = selectUniqueShops(items, history);
 
     // ==========================================
     // 1. UIの状態（モード切り替えなど）
@@ -56,7 +60,7 @@ export function useProductDetail() {
     const expired = item ? isExpired(item) : false;
     const expiringSoon = item ? isExpiringSoon(item) : false;
     const daysLeft = item ? getDaysUntilExpiry(item) : null;
-    const lowestPrice = item ? getLowestPrice(item.name) : null;
+    const lowestPrice = item ? selectLowestPrice(history, item.name) : null;
     const purchaseHistory = item ? history.filter((h) => h.name.toLowerCase() === item.name.toLowerCase()) : [];
 
     const unitPrice = item ? getUnitPrice(item) : null;
