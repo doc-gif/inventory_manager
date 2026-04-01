@@ -16,8 +16,8 @@ export default defineConfig({
             registerType: 'prompt',
             includeAssets: ['favicon.ico', 'apple-touch-icon.png'], // アイコン類
             manifest: {
-                name: 'おうちストック - 日用品管理', // 完全な名前
-                short_name: 'おうちストック',       // スマホのホーム画面に表示される短い名前（重要！）
+                name: 'くらしのストック - 日用品管理', // 完全な名前
+                short_name: 'くらしのストック',       // スマホのホーム画面に表示される短い名前（重要！）
                 description: '日用品の在庫と買い物を管理',
                 theme_color: '#ffffff', // ブラウザのステータスバーの色
                 background_color: '#ffffff', // 起動時のスプラッシュ画面の背景色

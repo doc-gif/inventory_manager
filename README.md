@@ -1,4 +1,4 @@
-# 📦 おうちストック
+# 📦 くらしのストック
 
 [![App Link](https://img.shields.io/badge/🚀_Play_App-Click_Here-blue?style=for-the-badge)](https://inventory-manager-eh6.pages.dev/)
 
